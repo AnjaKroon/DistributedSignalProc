@@ -46,11 +46,12 @@ def generate_measurements(num_nodes):
 def vector_to_dict(vector):
     return {index: value for index, value in enumerate(vector)}
 
-# Implementation of Distributed averaging -- randomly selecting neighbor and averaging
+# RANDOMIZED GOSSIP - no global knowledge of network, only contact one neighbor at a time
+# Implementation of randomized gossip? -- randomly selecting neighbor and averaging
 # exchange information with neighbor
 # get current node temperature, get random node, average them both, 
 # reset cur and neighbor node temperature
-def dist_avg(graph):
+def random_gossip(graph):
     std_dev = 100
     all_temps = nx.get_node_attributes(graph, "temp")
     x_avg = np.mean(list(all_temps.values()))
@@ -140,9 +141,9 @@ def main():
     rand_geo_gr = generate_rgg(NODES, RAD, DIM, dict_temps)
 
     '''
-    avg, stdev_dist_avg = dist_avg(rand_geo_gr)
-    plot_std_devs(stdev_dist_avg, "Dist. Avg. (Message Passing)")
-    print("Average with Dist. Avg. (Message Passing)", avg)
+    avg_rand_gossip, stdev_rand_gossip = random_gossip(rand_geo_gr)
+    plot_std_devs(stdev_rand_gossip, "Rand Gossip (Message Passing)")
+    print("Average with Rand Gossip (Message Passing)", avg_rand_gossip)
     '''
 
     # SYNCH DIST AVG WITH W
