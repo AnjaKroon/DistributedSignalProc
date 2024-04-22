@@ -12,7 +12,7 @@ import statistics
 from math import log
 import time
 
-NODES = 10
+NODES = 1000
 RAD = 0.3067   # 100 km, radius is 1 km 1/100 = 0.01
 DIM = 2
 TOL = 0.001
@@ -195,7 +195,7 @@ def dist_avg_asynch(graph):
     end_time = time.time()
     execution_time = end_time - start_time
     print("Execution time:", execution_time, "seconds")
-    print(" * asynch. should be shorter time than synch.")
+    # should be lining up to slide 45
     
     return x_kminus1[0], std_devs
 
@@ -245,7 +245,7 @@ def random_gossip(graph):
 PLOTTING CONVERGENCE TIME
 using the standard deviations -- mean did not provide sufficient information
 '''
-def plot_std_devs(array, name):
+def plot_single_std_dev(array, name):
     x_values = range(len(array))
     print("Messages for " + name + ":  ", len(array))
     plt.plot(x_values, array, marker='o', linestyle='-')
@@ -255,9 +255,30 @@ def plot_std_devs(array, name):
     plt.yscale('log') 
     plt.show()
 
+def plot_two_std_devs(array1, array2, name1, name2):
+    x_values = range(max(len(array1), len(array2)))
+
+    # pad the shorter one with None so they can be plotted together
+    if len(array1) < len(array2):
+        array1 += [None] * (len(array2) - len(array1))
+    elif len(array2) < len(array1):
+        array2 += [None] * (len(array1) - len(array2))
+
+    print("Messages for " + name1 + ":  ", len(array1))
+    print("Messages for " + name2 + ":  ", len(array2))
+    plt.plot(x_values, array1, marker='o', linestyle='-', label=name1)
+    plt.plot(x_values, array2, marker='o', linestyle='-', label=name2)
+    plt.xlabel('Messages')
+    plt.ylabel('Measurement Std Dev')
+    plt.title('X_avg Std Dev vs. Trans.')
+    plt.yscale('log') 
+    plt.legend()
+    plt.show()
+
 '''
 PLOTTING CONVERGENCE TIME WITH e(k)
 ''' 
+
 
 def main():
 
@@ -273,13 +294,15 @@ def main():
 
     # SYNCH DIST AVG
     avg_withW, stdev_dist_avg_withW = dist_avg_withW(rand_geo_gr)
-    plot_std_devs(stdev_dist_avg_withW, "Synch. Dist. Avg.")
+    # plot_single_std_dev(stdev_dist_avg_withW, "Synch. Dist. Avg.")
     print("Average with Synch. Dist. Avg. ", avg_withW)
 
     # ASYNCH DIST AVG
     avg_dist_avg_asynch, stdev_dist_avg_asynch = dist_avg_asynch(rand_geo_gr)
-    plot_std_devs(stdev_dist_avg_asynch, "Asynch. Dist. Avg.")
+    # plot_single_std_dev(stdev_dist_avg_asynch, "Asynch. Dist. Avg.")
     print("Average with Asynch. Dist. Avg.", avg_dist_avg_asynch)
+
+    plot_two_std_devs(stdev_dist_avg_withW, stdev_dist_avg_asynch, "Synch. Dist. Avg.", "Asynch. Dist. Avg.")
 
 if __name__ == "__main__":
     main()
