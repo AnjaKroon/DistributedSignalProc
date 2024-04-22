@@ -148,7 +148,7 @@ def main():
     # SYNCH DIST AVG WITH W
     avg_withW, stdev_dist_avg_withW = dist_avg_withW(rand_geo_gr)
     plot_std_devs(stdev_dist_avg_withW, "Synch. Dist. Avg. (With W)")
-    print("Average with Dist. Avg. (With W)", avg_withW)
+    print("Average with Synch. Dist. Avg. (With W)", avg_withW)
 
 
 if __name__ == "__main__":
