@@ -22,6 +22,7 @@ GENERATING RANDOM GEOMETRIC GRAPH
 using generate_rgg(), generate_measurements(), vector_to_dict
 '''
 def generate_rgg(num_nodes, radius, dimen, meas):
+    # assuming a connected graph -- do we need to consider non connected graphs?
     is_connected = False
     while(not is_connected):
         rgg = nx.random_geometric_graph(num_nodes, radius, dim=dimen, p=2)
@@ -50,7 +51,6 @@ def generate_measurements(num_nodes):
 
 def vector_to_dict(vector):
     return {index: value for index, value in enumerate(vector)}
-
 
 
 '''
@@ -88,11 +88,12 @@ def dist_avg_withW(graph):
     x_k = np.zeros(len(all_nodes))
     num_iterations = 0
     std_devs = []
+    errors = []
 
     while num_iterations < 25 or num_iterations > 20000 or not np.allclose(x_kminus1, true_avg):
         x_k = np.dot(W, x_kminus1)                          # update the x vector
         std_devs.append(np.std(x_k))
-        
+        errors.append(np.linalg.norm(x_k - np.ones(len(all_nodes)) * true_avg)**2)
         x_kminus1 = x_k
         num_iterations += 1
     
@@ -105,8 +106,9 @@ def dist_avg_withW(graph):
     end_time = time.time()
     execution_time = end_time - start_time
     print("Execution time:", execution_time, "seconds")
-    
-    return x_kminus1[0], std_devs
+    print("Messages: ", len(std_devs))
+    print("Average: ", x_kminus1[0])
+    return x_kminus1[0], std_devs, errors
 
 '''
 ASYNCH DIST AVG
@@ -129,6 +131,7 @@ def dist_avg_asynch(graph):
     x_k = np.zeros(len(all_nodes))
     num_iterations = 0  
     std_devs = []
+    errors = []
 
     # repeat this until convergence
     while num_iterations < 25 or num_iterations > 20000 or not np.allclose(x_kminus1, true_avg):
@@ -185,6 +188,7 @@ def dist_avg_asynch(graph):
         x_k = np.dot(W, x_kminus1)
         # print("Mean:", np.mean(x_k), "Std dev: ", np.std(x_k))
         std_devs.append(np.std(x_k))
+        errors.append(np.linalg.norm(x_k - np.ones(len(all_nodes)) * true_avg)**2)
         x_kminus1 = x_k
 
         num_iterations += 1
@@ -195,16 +199,9 @@ def dist_avg_asynch(graph):
     end_time = time.time()
     execution_time = end_time - start_time
     print("Execution time:", execution_time, "seconds")
-    # should be lining up to slide 45
-    
-    return x_kminus1[0], std_devs
-
-
-    # Things to check
-    # W should be symmetric
-    # W should be doubly stochastic
-    # W should be nonnegative
-    # absolute value of all eig values of W at all time should be less than or equal to 1
+    print("Messages: ", len(std_devs))
+    print("Average: ", x_kminus1[0])
+    return x_kminus1[0], std_devs, errors
 
 
 '''
@@ -242,8 +239,8 @@ def random_gossip(graph):
     return all_temps[0], std_devs
 
 '''
-PLOTTING CONVERGENCE TIME
-using the standard deviations -- mean did not provide sufficient information
+PLOTTING CONVERGENCE TIME (STD DEV)
+mean did not provide sufficient information
 '''
 def plot_single_std_dev(array, name):
     x_values = range(len(array))
@@ -256,16 +253,16 @@ def plot_single_std_dev(array, name):
     plt.show()
 
 def plot_two_std_devs(array1, array2, name1, name2):
-    x_values = range(max(len(array1), len(array2)))
+    # Plot should be in agreement up to slide 45 in averaging
 
+    x_values = range(max(len(array1), len(array2)))
+    
     # pad the shorter one with None so they can be plotted together
     if len(array1) < len(array2):
         array1 += [None] * (len(array2) - len(array1))
     elif len(array2) < len(array1):
         array2 += [None] * (len(array1) - len(array2))
 
-    print("Messages for " + name1 + ":  ", len(array1))
-    print("Messages for " + name2 + ":  ", len(array2))
     plt.plot(x_values, array1, marker='o', linestyle='-', label=name1)
     plt.plot(x_values, array2, marker='o', linestyle='-', label=name2)
     plt.xlabel('Messages')
@@ -276,8 +273,37 @@ def plot_two_std_devs(array1, array2, name1, name2):
     plt.show()
 
 '''
-PLOTTING CONVERGENCE TIME WITH e(k)
+PLOTTING CONVERGENCE TIME e(k)
 ''' 
+def plot_single_error(array, name):
+    x_values = range(len(array))
+    print("Messages for " + name + ":  ", len(array))
+    plt.plot(x_values, array, marker='o', linestyle='-')
+    plt.xlabel('Messages')
+    plt.ylabel('||x_k - x_avg||^2')
+    plt.title('e(k) vs. Trans. ' + name, fontweight='bold')
+    plt.yscale('log') 
+    plt.show()
+
+def plot_two_errors(array1, array2, name1, name2):
+    # Plot should be in agreement up to slide 45 in averaging
+
+    x_values = range(max(len(array1), len(array2)))
+    
+    # pad the shorter one with None so they can be plotted together
+    if len(array1) < len(array2):
+        array1 += [None] * (len(array2) - len(array1))
+    elif len(array2) < len(array1):
+        array2 += [None] * (len(array1) - len(array2))
+
+    plt.plot(x_values, array1, marker='o', linestyle='-', label=name1)
+    plt.plot(x_values, array2, marker='o', linestyle='-', label=name2)
+    plt.xlabel('Messages')
+    plt.ylabel('||x_k - x_avg||^2')
+    plt.title('e(k) vs. Trans.')
+    plt.yscale('log') 
+    plt.legend()
+    plt.show()
 
 
 def main():
@@ -293,16 +319,13 @@ def main():
     '''
 
     # SYNCH DIST AVG
-    avg_withW, stdev_dist_avg_withW = dist_avg_withW(rand_geo_gr)
-    # plot_single_std_dev(stdev_dist_avg_withW, "Synch. Dist. Avg.")
-    print("Average with Synch. Dist. Avg. ", avg_withW)
+    avg_withW, stdev_dist_avg_withW, errors_synch = dist_avg_withW(rand_geo_gr)
 
     # ASYNCH DIST AVG
-    avg_dist_avg_asynch, stdev_dist_avg_asynch = dist_avg_asynch(rand_geo_gr)
-    # plot_single_std_dev(stdev_dist_avg_asynch, "Asynch. Dist. Avg.")
-    print("Average with Asynch. Dist. Avg.", avg_dist_avg_asynch)
+    avg_dist_avg_asynch, stdev_dist_avg_asynch, errors_asynch = dist_avg_asynch(rand_geo_gr)
 
     plot_two_std_devs(stdev_dist_avg_withW, stdev_dist_avg_asynch, "Synch. Dist. Avg.", "Asynch. Dist. Avg.")
+    plot_two_errors(errors_synch, errors_asynch, "Synch. Dist. Avg.", "Asynch. Dist. Avg.")
 
 if __name__ == "__main__":
     main()
