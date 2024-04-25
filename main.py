@@ -5,7 +5,7 @@
 # Need to do random gossip algorithm, and another second decentralized asynchonous algorithm
 
 from utils import generate_rgg, generate_measurements, vector_to_dict
-from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch, pdmm_async
+from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch, pdmm_async, random_gossip_TF
 from visualization import plot_single_error, plot_multiple_pairs, plot_c_transmissions
 import numpy as np
 
@@ -22,6 +22,7 @@ RAD = np.sqrt(np.log(2*NODES) / NODES)
 
 DIM = 2
 TOL = 10**-12
+FAILURE_RATE = 0.25
 
 def main():
     temps = generate_measurements(NODES)
@@ -81,6 +82,22 @@ def main():
         transmissions_asynch.append((c, trans))
     plot_c_transmissions(transmissions_asynch, "PDMM Asynch", TOL)
     '''
+
+    # TRANSMISSION FAILURES
+
+    avg_rg_tf, stdev_rg_tf, error_rg_tf, trans_rg_tf = random_gossip_TF(rand_geo_gr, TOL, 0.1)
+    plot_single_error(error_rg_tf, "Random Gossip with Transmission Failures")
+
+    avg_rg_tf0, stdev_rg_tf0, error_rg_tf0, trans_rg_tf0 = random_gossip_TF(rand_geo_gr, TOL, 0.0)
+    avg_rg_tf25, stdev_rg_tf25, error_rg_tf25, trans_rg_tf25 = random_gossip_TF(rand_geo_gr, TOL, 0.25)
+    avg_rg_tf50, stdev_rg_tf50, error_rg_tf50, trans_rg_tf50 = random_gossip_TF(rand_geo_gr, TOL, 0.50)
+    avg_rg_tf75, stdev_rg_tf75, error_rg_tf75, trans_rg_tf75 = random_gossip_TF(rand_geo_gr, TOL, 0.75)
+    
+    
+    plot_multiple_pairs(((error_rg_tf0, "Random Gossip with (0%)"),
+                        (error_rg_tf25, "Random Gossip with (25%)"),
+                        (error_rg_tf50, "Random Gossip with (50%)"),
+                        (error_rg_tf75, "Random Gossip with (75%)")))
 
 if __name__ == "__main__":
     main()

@@ -37,3 +37,5 @@ def plot_c_transmissions(array, name, tolerance):
     plt.title('Choice of c for ' + name + ". Tolerance: " + str(tolerance), fontweight='bold')
     plt.legend(name)
     plt.show()
+
+
