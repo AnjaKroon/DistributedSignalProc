@@ -8,10 +8,10 @@ from utils import generate_rgg, generate_measurements, vector_to_dict
 from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch
 from visualization import plot_single_error, plot_multiple_pairs
 
-NODES = 500
+NODES = 5000
 RAD = 0.3067   # 100 km, radius is 1 km 1/100 = 0.01
 DIM = 2
-TOL = 0.000000001
+TOL = 10**-8
 
 def main():
     temps = generate_measurements(NODES)
