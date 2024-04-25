@@ -6,19 +6,20 @@
 
 from utils import generate_rgg, generate_measurements, vector_to_dict
 from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch
-from visualization import plot_single_error, plot_multiple_pairs
+from visualization import plot_single_error, plot_multiple_pairs, plot_c_transmissions
 import numpy as np
 
 # MANUAL
-# NODES = 500
+# NODES = 100
 # RAD = 0.3067   # 100 km, radius is 1 km 1/100 = 0.01
 
-#AUTO
-PROB_CONN = 0.999
-NODES = int(np.ceil(np.sqrt(1 / (1 - PROB_CONN))))
-print("Number of nodes: ", NODES)
-NODES = 500
+NODES = 200
 RAD = np.sqrt(np.log(2*NODES) / NODES)
+
+#AUTO
+# PROB_CONN = 0.9
+# NODES = int(np.ceil(np.sqrt(1 / (1 - PROB_CONN))))
+
 DIM = 2
 TOL = 10**-12
 
@@ -28,10 +29,10 @@ def main():
     rand_geo_gr = generate_rgg(NODES, RAD, DIM, dict_temps)
 
     # SYNCH DIST AVG
-    avg_dist_avg_synch, stdev_dist_avg_synch, errors_synch, trans_synch = dist_avg_synch(rand_geo_gr, TOL)
+    # avg_dist_avg_synch, stdev_dist_avg_synch, errors_synch, trans_synch = dist_avg_synch(rand_geo_gr, TOL)
 
     # ASYNCH DIST AVG
-    avg_dist_avg_asynch_W, stdev_dist_avg_asynch_W, errors_asynch_W, trans_asynch_W = dist_avg_asynch_W(rand_geo_gr, TOL)
+    # avg_dist_avg_asynch_W, stdev_dist_avg_asynch_W, errors_asynch_W, trans_asynch_W = dist_avg_asynch_W(rand_geo_gr, TOL)
     avg_asynch_noW, stdev_asynch_noW, errors_asynch_noW, trans_asynch_noW = dist_avg_asynch_noW(rand_geo_gr, TOL)
 
     # RANDOM GOSSIP
@@ -57,9 +58,19 @@ def main():
     avg_pdmm_synch, stdev_pdmm_synch, error_pdmm_synch, trans_pdmm_synch = pdmm_synch(rand_geo_gr, TOL)    
     # plot_single_error(error_pdmm_synch, "PDMM Synch")
 
+    
     plot_multiple_pairs(((errors_asynch_noW, "Asynch Dist Avg no W"), 
                         (error_rand_goss_noW, "Random Gossip no W"),
                         (error_pdmm_synch, "PDMM Synch")))
+    
+    
+    c_values = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    transmissions_list = []
+    for c in c_values:
+        print("Calculating pdmm for c = ", c)
+        avg, stdev, error, trans = pdmm_synch(rand_geo_gr, TOL, c)
+        transmissions_list.append((c, trans))
+    plot_c_transmissions(transmissions_list, "PDMM Synch", TOL)
 
 if __name__ == "__main__":
     main()
