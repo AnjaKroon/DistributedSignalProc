@@ -2,10 +2,6 @@
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
-import random
-import statistics
-from math import log
-import time
 
 '''
 GENERATING RANDOM GEOMETRIC GRAPH

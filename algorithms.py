@@ -1,12 +1,9 @@
 
 import networkx as nx
 import numpy as np
-import matplotlib.pyplot as plt
 import random
 import statistics
-from math import log
 import time
-from utils import vector_to_dict
 
 '''
 SYNCH. DIST AVG
@@ -328,3 +325,58 @@ def random_gossip_noW(graph, TOL):
 
     return all_temps[0], std_devs, errors, transmissions
 
+'''
+PDMM
+1) Initialize variables
+    x_0 = 0                                     (dimension = # nodes (n) x 1)
+    a = sensor measurements vector              (dimension = # nodes (n) x 1)
+    z_00 = 0                                    (dimension = [[# N(1) x 1 ], [# N(2) x 1], ... , [# N(n) x 1]])
+    y_00 = 0                                    (dimension = [[# N(1) x 1 ], [# N(2) x 1], ... , [# N(n) x 1]])
+    c = 0.1 (based on graph, good initial point)
+    d = graph degree vector                     (dimension = # nodes (n) x 1)
+    A = not adjacency matrix  (make method)     (dimension = # edges (m) x # nodes (n))
+
+2) while e(k) > epsilon:
+    for all nodes i,
+        update x_i(k) = ( a_i + sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
+        for all neighbors of i called j,
+            update y_ij(k) = z_ij(k-1) + 2*c*x_i(k)*A_ij
+    for all nodes i,
+        for all N(i), 
+            Send to node j the value y_ij. Node j will see it as y_ji.       # Due to implementation, this step can be skipped
+            transmissions += 1
+    for all nodes i,
+        for all neighbors of i called j,
+            z_ij = y_ji  
+    e(k) = ||a - true_avg||_2^2
+    x(k-1) = x(k)
+TRANSMISSIONS: for all nodes i, for N(i), one transmission made
+'''
+
+def pdmm_synch(graph, TOL):
+    print("")
+    print("------- PDMM Synchronous ------- ")
+
+    start_time = time.time()
+
+    # Constants
+    c = 0.1
+
+    # Initialize variables
+    all_nodes = list(nx.nodes(graph))
+    all_edges = list(nx.edges(graph))
+    a = np.array(list(nx.get_node_attributes(graph, "temp").values()))
+    x_0 = np.zeros(len(all_nodes))
+    list_neighbors = [list(nx.all_neighbors(graph, node)) for node in all_nodes]
+    z_00 = np.zeros(np.zeros(list_neighbors[node]) for node in all_nodes)
+    y_00 = np.zeros(np.zeros(list_neighbors[node]) for node in all_nodes)
+    d = np.array([graph.degree(node) for node in all_nodes])
+
+    # Make A matrix
+    A = np.zeros((len(all_edges), len(all_nodes)))
+    for i, edge in enumerate(all_edges):
+        A[i, edge[0]] = 1
+        A[i, edge[1]] = -1
+    
+
+    return "test"

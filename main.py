@@ -4,14 +4,6 @@
 # Objective: Compute the average value of the measurement data
 # Need to do random gossip algorithm, and another second decentralized asynchonous algorithm
 
-import networkx as nx
-import numpy as np
-import matplotlib.pyplot as plt
-import random
-import statistics
-from math import log
-import time
-
 from utils import generate_rgg, generate_measurements, vector_to_dict
 from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW
 from visualization import plot_single_error, plot_multiple_pairs
