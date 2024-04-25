@@ -19,7 +19,7 @@ def plot_multiple_pairs(pairs):
     for array, name in pairs:
         x_values = [x for x, _ in array]
         y_values = [y for _, y in array]
-        plt.plot(x_values, y_values, marker='o', linestyle='-', label=name)
+        plt.plot(x_values, y_values, label=name)
     plt.xlabel('Transmissions')
     plt.ylabel('||x_k - x_avg||^2')
     plt.title('e(k) vs. Trans.')

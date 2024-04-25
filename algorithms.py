@@ -386,9 +386,9 @@ def pdmm_synch(graph, TOL):
     transmissions = 0
     
     while (np.linalg.norm(x - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
+        transmissions += 1
         for i in all_nodes:
             x[i] = (a[i] - np.sum( A[(i, j)] * z_ij[(i, j)] for j in list_neighbors[i])) / (1 + c * d[i])
-            transmissions += 1
             for j in list_neighbors[i]:
                 y_ij[(i, j)] = z_ij[(i, j)] + 2 * c * x[i] * A[(i, j)]
         for i in all_nodes:

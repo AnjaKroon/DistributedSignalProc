@@ -7,11 +7,20 @@
 from utils import generate_rgg, generate_measurements, vector_to_dict
 from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch
 from visualization import plot_single_error, plot_multiple_pairs
+import numpy as np
 
-NODES = 5000
-RAD = 0.3067   # 100 km, radius is 1 km 1/100 = 0.01
+# MANUAL
+# NODES = 500
+# RAD = 0.3067   # 100 km, radius is 1 km 1/100 = 0.01
+
+#AUTO
+PROB_CONN = 0.999
+NODES = int(np.ceil(np.sqrt(1 / (1 - PROB_CONN))))
+print("Number of nodes: ", NODES)
+NODES = 500
+RAD = np.sqrt(np.log(2*NODES) / NODES)
 DIM = 2
-TOL = 10**-8
+TOL = 10**-12
 
 def main():
     temps = generate_measurements(NODES)
@@ -46,7 +55,11 @@ def main():
 
     # PDMM
     avg_pdmm_synch, stdev_pdmm_synch, error_pdmm_synch, trans_pdmm_synch = pdmm_synch(rand_geo_gr, TOL)    
-    plot_single_error(error_pdmm_synch, "PDMM Synch")
+    # plot_single_error(error_pdmm_synch, "PDMM Synch")
+
+    plot_multiple_pairs(((errors_asynch_noW, "Asynch Dist Avg no W"), 
+                        (error_rand_goss_noW, "Random Gossip no W"),
+                        (error_pdmm_synch, "PDMM Synch")))
 
 if __name__ == "__main__":
     main()
