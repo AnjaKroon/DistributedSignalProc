@@ -503,7 +503,7 @@ RANDOMIZED GOSSIP TRANSMISSION FAILURES
 TRANSMISSIONS: per iteration of while loop = 1
 * decided to only implement the without W implementation because matrix multiplications implodes the time
 '''
-def random_gossip_TF(graph, TOL, FAILURE_RATE=0.25):
+def random_gossip_TF(graph, TOL, FAILURE_RATE=0.0):
     print("")
     print("------- RANDOM GOSSIP w/ Transmission Failures------- ")
 
@@ -520,7 +520,6 @@ def random_gossip_TF(graph, TOL, FAILURE_RATE=0.25):
 
     all_nodes = list(nx.nodes(graph))
     while (np.linalg.norm(list(all_temps.values()) - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
-        
         if (random.random() < FAILURE_RATE):        # 25% of the time, transmission fails, skip loop iteration
             transmissions += 1
             continue
@@ -572,6 +571,7 @@ PDMM Asynchronous with Transmission Failures
     A = not adjacency matrix  (make method)     (dimension = # edges (m) x # nodes (n)) # implemented as dict
 
 2) while e(k) > epsilon:
+    if transmission failure case, skip iteration of while loop
     select a random node i
         update x_i(k) = ( a_i - sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
         for all neighbors of i called j,
@@ -587,9 +587,9 @@ PDMM Asynchronous with Transmission Failures
 TRANSMISSIONS: for all nodes i, for N(i), one transmission made
 UNICAST VERSION
 '''
-def pdmm_async(graph, TOL, c=0.4):
+def pdmm_async_tf(graph, TOL, c=0.4, FAILURE_RATE=0.0):
     print("")
-    print("------- PDMM Asynchronous ------- ")
+    print("------- PDMM Asynchronous TF ------- ")
 
     start_time = time.time()
 
@@ -618,6 +618,10 @@ def pdmm_async(graph, TOL, c=0.4):
     transmissions = 0
     
     while (np.linalg.norm(x - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
+        if (random.random() < FAILURE_RATE):        # 25% of the time, transmission fails, skip loop iteration
+            transmissions += 1
+            continue
+
         i = random.choice(all_nodes)
         transmissions += 1
         x[i] = (a[i] - np.sum( A[(i, j)] * z_ij[(i, j)] for j in list_neighbors[i])) / (1 + c * d[i])
