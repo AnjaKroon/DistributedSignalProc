@@ -330,15 +330,15 @@ PDMM
 1) Initialize variables
     x_0 = 0                                     (dimension = # nodes (n) x 1)
     a = sensor measurements vector              (dimension = # nodes (n) x 1)
-    z_00 = 0                                    (dimension = [[# N(1) x 1 ], [# N(2) x 1], ... , [# N(n) x 1]])
-    y_00 = 0                                    (dimension = [[# N(1) x 1 ], [# N(2) x 1], ... , [# N(n) x 1]])
+    z_00 = 0                                    (dimension = [[# N(1) x 1 ], [# N(2) x 1], ... , [# N(n) x 1]]) # implemented as dict
+    y_00 = 0                                    (dimension = [[# N(1) x 1 ], [# N(2) x 1], ... , [# N(n) x 1]]) # implemented as dict
     c = 0.1 (based on graph, good initial point)
     d = graph degree vector                     (dimension = # nodes (n) x 1)
-    A = not adjacency matrix  (make method)     (dimension = # edges (m) x # nodes (n))
+    A = not adjacency matrix  (make method)     (dimension = # edges (m) x # nodes (n)) # implemented as dict
 
 2) while e(k) > epsilon:
     for all nodes i,
-        update x_i(k) = ( a_i + sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
+        update x_i(k) = ( a_i - sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
         for all neighbors of i called j,
             update y_ij(k) = z_ij(k-1) + 2*c*x_i(k)*A_ij
     for all nodes i,
@@ -349,7 +349,6 @@ PDMM
         for all neighbors of i called j,
             z_ij = y_ji  
     e(k) = ||a - true_avg||_2^2
-    x(k-1) = x(k)
 TRANSMISSIONS: for all nodes i, for N(i), one transmission made
 '''
 
@@ -366,17 +365,47 @@ def pdmm_synch(graph, TOL):
     all_nodes = list(nx.nodes(graph))
     all_edges = list(nx.edges(graph))
     a = np.array(list(nx.get_node_attributes(graph, "temp").values()))
-    x_0 = np.zeros(len(all_nodes))
+    x = np.zeros(len(all_nodes))
     list_neighbors = [list(nx.all_neighbors(graph, node)) for node in all_nodes]
-    z_00 = np.zeros(np.zeros(list_neighbors[node]) for node in all_nodes)
-    y_00 = np.zeros(np.zeros(list_neighbors[node]) for node in all_nodes)
+
+    # Dimension of these should always be 2*num_edges
+    z_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors[i]}      # check every time you update that its a valid edge
+    y_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors[i]}      # check every time you update that its a valid edge
     d = np.array([graph.degree(node) for node in all_nodes])
 
-    # Make A matrix
-    A = np.zeros((len(all_edges), len(all_nodes)))
+    # Make A: Implemented as a dictionary to avoid indexing issues
+    A = {}
     for i, edge in enumerate(all_edges):
-        A[i, edge[0]] = 1
-        A[i, edge[1]] = -1
+        A[(edge[0], edge[1])] = 1
+        A[(edge[1], edge[0])] = -1
     
+    # Get true average, used for stopping criterion
+    true_avg = np.mean(a)
+    std_devs = []
+    errors = []
+    transmissions = 0
+    
+    while (np.linalg.norm(x - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
+        for i in all_nodes:
+            x[i] = (a[i] - np.sum( A[(i, j)] * z_ij[(i, j)] for j in list_neighbors[i])) / (1 + c * d[i])
+            for j in list_neighbors[i]:
+                y_ij[(i, j)] = z_ij[(i, j)] + 2 * c * x[i] * A[(i, j)]
+        for i in all_nodes:
+            for j in list_neighbors[i]:
+                z_ij[(i, j)] = y_ij[(j, i)]
+                transmissions += 1
+        if (transmissions % 1000 == 0):
+            print("Iteration: ", transmissions)
+    
+    std_dev = statistics.stdev(x)
+    std_devs.append((transmissions, std_dev))
 
-    return "test"
+    errors.append((transmissions, np.linalg.norm(x - np.ones(len(all_nodes)) * true_avg)**2))
+    
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Execution time:", execution_time, "seconds")
+    print("Transmissions: ", transmissions)
+    print("Average: ", x[0])
+
+    return x[0], std_devs, errors, transmissions

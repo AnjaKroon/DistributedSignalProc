@@ -5,10 +5,10 @@
 # Need to do random gossip algorithm, and another second decentralized asynchonous algorithm
 
 from utils import generate_rgg, generate_measurements, vector_to_dict
-from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW
+from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch
 from visualization import plot_single_error, plot_multiple_pairs
 
-NODES = 100
+NODES = 500
 RAD = 0.3067   # 100 km, radius is 1 km 1/100 = 0.01
 DIM = 2
 TOL = 0.000000001
@@ -28,6 +28,8 @@ def main():
     # RANDOM GOSSIP
     avg_rand_goss, stdev_rand_goss_noW, error_rand_goss_noW, trans_rand_goss_noW = random_gossip_noW(rand_geo_gr, TOL)
 
+    # PLOTTING
+    '''
     plot_single_error(errors_synch, "Synch Dist Avg")
     plot_single_error(errors_asynch_W, "Asynch Dist Avg with W")
     plot_single_error(errors_asynch_noW, "Asynch Dist Avg no W")
@@ -40,7 +42,11 @@ def main():
     
     plot_multiple_pairs(((errors_asynch_noW, "Asynch Dist Avg no W"), 
                         (error_rand_goss_noW, "Random Gossip no W")))
-    
+    '''
+
+    # PDMM
+    avg_pdmm_synch, stdev_pdmm_synch, error_pdmm_synch, trans_pdmm_synch = pdmm_synch(rand_geo_gr, TOL)    
+    plot_single_error(error_pdmm_synch, "PDMM Synch")
 
 if __name__ == "__main__":
     main()
