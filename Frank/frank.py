@@ -5,22 +5,22 @@ from utils import *
 from algo import *
 
 
-# np.random.seed(1)
+np.random.seed(1)
 
 
 
 required_probability=0.9999
-num_nodes, G,A,pos=build_random_graph(50,required_probability,fix_num_nodes=True)
+num_nodes, G,A,pos=build_random_graph(200,required_probability,fix_num_nodes=True)
 print("num_nodes:",num_nodes)
 
 #now to generate measured values for the temperature sensors ins some flat 3d field
 temperature=generate_temp_field(num_nodes,10,25)
-tolerance=10**-12
+tolerance=10**-8
 
 
 loss_random,temperature_rand=random_gossip(temperature.copy(),A,tolerance)
-loss_random_add,temperature_rand_add=random_gossip_node_change(temperature.copy(),G,pos,25,10,tolerance,"add_bulk")
-plot_log_convergence([loss_random_add, loss_random],[np.arange(1,loss_random_add.shape[0]+1),np.arange(1,loss_random.shape[0]+1)],['Random Gossip add',"Random gossip"],num_nodes)
+loss_random_add,temperature_rand_add=random_gossip_node_change(temperature.copy(),G,pos,25,10,tolerance,"remove_bulk",averaging_method="other",max_iter=100000)
+plot_log_convergence([loss_random_add, loss_random],[np.arange(1,loss_random_add.shape[0]+1),np.arange(1,loss_random.shape[0]+1)],['Random Gossip remove ',"Random gossip"],num_nodes)
 
 
 
