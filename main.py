@@ -5,7 +5,7 @@
 # Need to do random gossip algorithm, and another second decentralized asynchonous algorithm
 
 from utils import generate_rgg, generate_measurements, vector_to_dict
-from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch, pdmm_async, random_gossip_TF, pdmm_async_tf, random_gossip_dropadd
+from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch, pdmm_async, random_gossip_TF, pdmm_async_tf, random_gossip_dropadd, pdmm_asynch_dropadd
 from visualization import plot_single_error, plot_multiple_pairs, plot_c_transmissions
 import numpy as np
 
@@ -174,7 +174,7 @@ def main():
     '''
 
     # TESTING SEQUENTIAL ADD
-    
+    '''
     # Regenerate graph so graph is full size
     temps = generate_measurements(NODES)
     dict_temps = vector_to_dict(temps)
@@ -187,7 +187,23 @@ def main():
     avg_rg_tf_add_seq, stdev_rg_tf_add_seq, error_rg_tf_add_seq, trans_rg_tf_add_seq= random_gossip_dropadd(rand_geo_gr, TOL, drop, add, tp)
     plot_multiple_pairs(((error_rg_noW, "Random Gossip (Add=0%)"),
                         (error_rg_tf_add_seq, "Random Gossip (Add=" + str(add*100) + "%)")), "Random Gossip: Add: " + str(add*100) + "% Type: Sequential ")
-    
+    '''
+
+    # TESTING PDMM BULK DROP
+    # Regenerate graph so graph is full size
+    temps = generate_measurements(NODES)
+    dict_temps = vector_to_dict(temps)
+    rand_geo_gr = generate_rgg(NODES, RAD, DIM, dict_temps)
+
+    drop = 0.2
+    add = 0.0
+    c = 0.4
+
+    avg_pdmm_drop_bulk, stdev_pdmm_drop_bulk, error_pdmm_drop, trans_pdmm_drop_bulk = pdmm_asynch_dropadd(rand_geo_gr, TOL, c, drop, add)
+    plot_multiple_pairs(((error_rg_noW, "PDMM (Drop=0%)"),
+                        (error_pdmm_drop, "PDMM (Drop=" + str(drop*100) + "%)")), "PDMM: Drop: " + str(drop*100) + "% Type: Bulk ")
+
+
 
 if __name__ == "__main__":
     main()

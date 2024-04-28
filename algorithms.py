@@ -498,7 +498,6 @@ def pdmm_async(graph, TOL, c=0.4):
 
     return x[0], std_devs, errors, transmissions
 
-
 '''
 RANDOMIZED GOSSIP WITH TRANSMISSION FAILURES
 '''
@@ -578,7 +577,7 @@ def random_gossip_TF(graph, TOL, FAILURE_RATE=0.0):
 '''
 RANDOMIZED GOSSIP WITH NODE DROP/ADD
 '''
-def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"):
+def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
     '''
     Random Gossip Algorithm
     4 OPTIONS:
@@ -780,10 +779,12 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"
 
     return list(all_temps.values())[0], std_devs, errors, transmissions
 
-
 '''
 PDMM Asynchronous with Transmission Failures
-1) Initialize variables
+'''
+def pdmm_async_tf(graph, TOL, c=0.4, FAILURE_RATE=0.0):
+    '''
+    1) Initialize variables
     x_0 = 0                                     (dimension = # nodes (n) x 1)
     a = sensor measurements vector              (dimension = # nodes (n) x 1)
     z_00 = 0                                    (dimension = [[# N(1) x 1 ], [# N(2) x 1], ... , [# N(n) x 1]]) # implemented as dict
@@ -792,24 +793,23 @@ PDMM Asynchronous with Transmission Failures
     d = graph degree vector                     (dimension = # nodes (n) x 1)
     A = not adjacency matrix  (make method)     (dimension = # edges (m) x # nodes (n)) # implemented as dict
 
-2) while e(k) > epsilon:
-    if transmission failure case, skip iteration of while loop
-    select a random node i
-        update x_i(k) = ( a_i - sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
-        for all neighbors of i called j,
-            update y_ij(k) = z_ij(k-1) + 2*c*x_i(k)*A_ij
-    for all nodes i,
-        for all N(i), 
-            Send to node j the value y_ij. Node j will see it as y_ji.       # Due to implementation, this step can be skipped
-            transmissions += 1
-    for the single randomly selected node i,
-        for all neighbors of i called j,
-            z_ij = y_ji  
-    e(k) = ||a - true_avg||_2^2
-TRANSMISSIONS: for all nodes i, for N(i), one transmission made
-UNICAST VERSION
-'''
-def pdmm_async_tf(graph, TOL, c=0.4, FAILURE_RATE=0.0):
+    2) while e(k) > epsilon:
+        if transmission failure case, skip iteration of while loop
+        select a random node i
+            update x_i(k) = ( a_i - sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
+            for all neighbors of i called j,
+                update y_ij(k) = z_ij(k-1) + 2*c*x_i(k)*A_ij
+        for all nodes i,
+            for all N(i), 
+                Send to node j the value y_ij. Node j will see it as y_ji.       # Due to implementation, this step can be skipped
+                transmissions += 1
+        for the single randomly selected node i,
+            for all neighbors of i called j,
+                z_ij = y_ji  
+        e(k) = ||a - true_avg||_2^2
+    TRANSMISSIONS: for all nodes i, for N(i), one transmission made
+    UNICAST VERSION
+    '''
     print("")
     print("------- PDMM Asynchronous TF ------- ")
 
@@ -851,6 +851,116 @@ def pdmm_async_tf(graph, TOL, c=0.4, FAILURE_RATE=0.0):
             y_ij[(i, j)] = z_ij[(i, j)] + 2 * c * x[i] * A[(i, j)]
         for j in list_neighbors[i]:
             z_ij[(i, j)] = y_ij[(j, i)]
+        
+        std_dev = statistics.stdev(x)
+        std_devs.append((transmissions, std_dev))
+
+        errors.append((transmissions, np.linalg.norm(x - np.ones(len(all_nodes)) * true_avg)**2))
+    
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Execution time:", execution_time, "seconds")
+    print("Transmissions: ", transmissions)
+    print("Average: ", x[0])
+
+    return x[0], std_devs, errors, transmissions
+
+'''
+PDMM Asynchronous with Node Drop/Add
+'''
+def pdmm_asynch_dropadd(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
+    '''
+    PDMM Asynchronous Node Dropping and Adding
+    2 Cases:
+        * Bulk drop
+        * Bulk add
+    '''
+    print("")
+    if (DROP_RATE > 0.0): # Dropping nodes
+        print("------- PDMM Asynchronous w/ Bulk DROP: " + str(DROP_RATE) + " ------- ")
+    elif (ADD_RATE > 0.0): # Adding nodes
+        print("------- PDMM Asynchronous w/ Bulk ADD: " + str(ADD_RATE) + " ------- ")
+
+    start_time = time.time()
+
+    # Initialize variables
+    all_nodes = list(nx.nodes(graph))
+    print(sorted(all_nodes))
+    all_edges = list(nx.edges(graph))
+    a = np.array(list(nx.get_node_attributes(graph, "temp").values()))
+    x = np.zeros(len(all_nodes))
+    list_neighbors = [list(nx.all_neighbors(graph, node)) for node in all_nodes]
+
+    # Dimension of these should always be 2*num_edges
+    z_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors[i]}      # check every time you update that its a valid edge
+    y_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors[i]}      # check every time you update that its a valid edge
+    d = np.array([graph.degree(node) for node in all_nodes])
+
+    # Make A: Implemented as a dictionary to avoid indexing issues
+    A = {}
+    for i, edge in enumerate(all_edges):
+        A[(edge[0], edge[1])] = 1
+        A[(edge[1], edge[0])] = -1
+    
+    # Get true average, used for stopping criterion
+    true_avg = np.mean(a)
+    std_devs = []
+    errors = []
+    transmissions = 0
+
+    DROP_FLAG = False
+    
+    while (np.linalg.norm(x - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
+
+        # Bulk Drop
+        if (transmissions > 100 and DROP_RATE > 0.0 and DROP_FLAG == False):
+            graph_old = graph.copy()
+            print("Number of nodes BEFORE DROP: ", len(all_nodes))
+            num_nodes_drop = int(len(all_nodes) * DROP_RATE)
+            nodes_to_drop = random.sample(all_nodes, num_nodes_drop)
+            for node in nodes_to_drop:
+                graph.remove_node(node)
+            # Check if the graph is connected
+            if not nx.is_connected(graph):
+                print("\033[91mERROR: After the nodes have been dropped in bulk, the graph is no longer connected.\033[0m")
+                break
+
+            # plot the two graphs
+            plot_rgg_side_by_side(graph_old, graph)
+
+            all_nodes = list(nx.nodes(graph))
+            print("Number of nodes AFTER DROP: ", len(all_nodes))
+            print(sorted(all_nodes))
+
+            # Rebuild the necessary variables
+            all_edges = list(nx.edges(graph))
+            a = np.array(list(nx.get_node_attributes(graph, "temp").values()))
+            x = np.zeros(len(all_nodes))
+            list_neighbors = {node: list(nx.all_neighbors(graph, node)) for node in all_nodes}
+            
+            z_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors.get(i, [])}
+            y_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors.get(i, [])}
+            d = np.array([graph.degree(node) for node in all_nodes])
+            A = {}
+            for i, edge in enumerate(all_edges):
+                A[(edge[0], edge[1])] = 1
+                A[(edge[1], edge[0])] = -1
+            true_avg = np.mean(a)
+
+            DROP_FLAG = True
+        
+
+
+        # print("Number of nodes AFTER DROP: ", len(all_nodes))
+        i = random.choice(all_nodes)
+        transmissions += 1
+        
+        x[i] = (a[i] - np.sum( A[(i, j)] * z_ij[(i, j)] for j in list_neighbors[i])) / (1 + c * d[i])
+        for j in list_neighbors[i]:
+            y_ij[(i, j)] = z_ij[(i, j)] + 2 * c * x[i] * A[(i, j)]
+        for j in list_neighbors[i]:
+            z_ij[(i, j)] = y_ij[(j, i)]
+            
         
         std_dev = statistics.stdev(x)
         std_devs.append((transmissions, std_dev))
