@@ -7,6 +7,14 @@ import matplotlib.pyplot as plt
 GENERATING RANDOM GEOMETRIC GRAPH
 using generate_rgg(), generate_measurements(), vector_to_dict
 '''
+def generate_measurements(num_nodes):
+    n = np.random.normal(0, 3, num_nodes)
+    t = 20
+    y = np.zeros(num_nodes)
+    for i in range(len(n)):
+         y[i] = t + n[i]
+    return y
+
 def generate_rgg(num_nodes, radius, dimen, meas):
     # assuming a connected graph -- do we need to consider non connected graphs?
     is_connected = False
@@ -27,13 +35,6 @@ def generate_rgg(num_nodes, radius, dimen, meas):
 
     return rgg
 
-def generate_measurements(num_nodes):
-    n = np.random.normal(0, 3, num_nodes)
-    t = 20
-    y = np.zeros(num_nodes)
-    for i in range(len(n)):
-         y[i] = t + n[i]
-    return y
 
 def vector_to_dict(vector):
     return {index: value for index, value in enumerate(vector)}

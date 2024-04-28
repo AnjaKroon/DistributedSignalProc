@@ -5,6 +5,9 @@ import random
 import statistics
 import time
 
+from utils import generate_measurements, generate_rgg, vector_to_dict
+from visualization import plot_rgg_side_by_side
+
 '''
 SYNCH. DIST AVG
 1) Find optimal alpha
@@ -581,7 +584,11 @@ TRANSMISSIONS: per iteration of while loop = 1
 '''
 def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"):
     print("")
-    print("------- RANDOM GOSSIP w/ DROP: " + str(DROP_RATE) + " ADD " + str(ADD_RATE) + " ------- ")
+    if (DROP_RATE > 0.0): # Dropping nodes
+        print("------- RANDOM GOSSIP w/ " + str(type) + " DROP: " + str(DROP_RATE) + " ------- ")
+    elif (ADD_RATE > 0.0): # Adding nodes
+        print("------- RANDOM GOSSIP w/ " + str(type) + " ADD: " + str(ADD_RATE) + " ------- ")
+    else: print("------- RANDOM GOSSIP w/ DROP: " + str(DROP_RATE) + " ADD " + str(ADD_RATE) + " ------- ")
 
     start_time = time.time()
 
@@ -594,12 +601,13 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"
     errors = []
     transmissions = 0
     DROPPED_FLAG = False
+    ADDED_FLAG = False
 
     all_nodes = list(nx.nodes(graph))
     while (np.linalg.norm(list(all_temps.values()) - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
         
-        # Do a single drop at iteration 10k based on the drop rate
-        if (transmissions > 2000 and DROPPED_FLAG == False and type == "bulk"):
+        # CASE 1: BULK DROP
+        if (transmissions > 2000 and DROPPED_FLAG == False and type == "bulk" and DROP_RATE > 0.0):
             # print("Number of nodes BEFORE DROP: ", len(all_nodes))
             num_nodes_drop = int(len(all_nodes) * DROP_RATE)
             # print("Number of nodes to drop: ", num_nodes_drop)
@@ -614,16 +622,16 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"
             
             # Recalculation after nodes drop
             all_nodes = list(nx.nodes(graph))
-            print("Number of nodes AFTER BULK DROP: ", len(all_nodes))
+            # print("Number of nodes AFTER BULK DROP: ", len(all_nodes))
             all_temps = nx.get_node_attributes(graph, "temp")
             true_avg = np.mean(list(all_temps.values()))
             
             DROPPED_FLAG = True
 
+        # CASE 2: SEQUENTIAL DROP
         num_nodes_drop = int(len(all_nodes) * DROP_RATE) # in total this is how many nodes you want to drop
         num_nodes_dropped_already = 0
-
-        if (transmissions > 2000 and DROPPED_FLAG == False and type == "seq" and transmissions % 100 == 0): # only drop every 100 iterations of the while loop
+        if (transmissions > 2000 and DROPPED_FLAG == False and type == "seq" and transmissions % 100 == 0 and DROP_RATE > 0.0): # only drop every 100 iterations of the while loop
             all_nodes = list(nx.nodes(graph))           # get current list of nodes
             node_to_drop = random.choice(all_nodes)     # drop a single random node from the graph
             graph.remove_node(node_to_drop) # drop a single random node from the graph
@@ -637,12 +645,56 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"
 
             # Check if the graph is connected
             if not nx.is_connected(graph):
-                print("\033[91mERROR: After the nodes have been dropped in bulk, the graph is no longer connected.\033[0m")
+                print("\033[91mERROR: After the nodes have been dropped in sequence, the graph is no longer connected.\033[0m")
                 break
 
             if num_nodes_dropped_already == num_nodes_drop:
-                print("Number of nodes AFTER DROP: ", len(all_nodes))
+                # print("Number of nodes AFTER SEQ DROP: ", len(all_nodes))
                 DROPPED_FLAG = True
+        
+        # CASE 3: BULK ADD
+        if (transmissions > 2000 and ADDED_FLAG == False and type == "bulk" and ADD_RATE > 0.0):
+            graph_old = graph.copy()
+            print("Number of nodes BEFORE BULK ADD: ", len(all_nodes))
+            num_nodes_add = int(len(all_nodes) * ADD_RATE)
+            new_measurements = generate_measurements(num_nodes_add)
+
+            for i in range(num_nodes_add):
+                print("Node to add: ", len(all_nodes)+i+1)
+                # is position supposed to be in this range
+                graph.add_node(len(all_nodes)+1+i, pos=(random.uniform(0, 1), random.uniform(0, 1)), temp=new_measurements[i])
+                # make sure graph position is being created as well
+
+                pos = nx.get_node_attributes(graph, 'pos') 
+                
+                print(len(pos), "should be equal to ", len(all_nodes)+i+1)
+
+                # randomly connect it to the graph in a random geometric manner
+                RADIUS = np.sqrt(np.log(2*len(all_nodes)+i+1)) / len(all_nodes)+i+1
+                print("Radius: ", RADIUS)
+                for node in graph.nodes():
+                    if node != len(all_nodes) + i + 1:
+                        distance = np.linalg.norm(np.array(graph.nodes[node]['pos']) - np.array(graph.nodes[len(all_nodes) + i + 1]['pos']))
+                        if distance <= RADIUS:
+                            graph.add_edge(node, len(all_nodes) + i + 1)
+                
+                
+
+            # to check this was done correctly, print the graph before and after adding nodes
+            plot_rgg_side_by_side(graph_old, graph)
+
+            # Check if the graph is connected
+            if not nx.is_connected(graph):
+                print("\033[91mERROR: After the nodes have been added in bulk, the graph is no longer connected.\033[0m")
+                break
+            
+            # Recalculation after nodes drop
+            all_nodes = list(nx.nodes(graph))
+            print("Number of nodes AFTER BULK ADD: ", len(all_nodes))
+            all_temps = nx.get_node_attributes(graph, "temp")
+            true_avg = np.mean(list(all_temps.values()))
+            
+            ADDED_FLAG = True
 
         # uniformly select random node i
         node_i = random.choice(all_nodes)
