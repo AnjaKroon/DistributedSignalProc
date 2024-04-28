@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
+# np.random.seed(1)
 
 def build_random_graph(num_nodes_fix,required_probability=0.999,fix_num_nodes=False):
     """
@@ -112,4 +113,13 @@ def plot_log_convergence(losses,transmissions, legend,num_nodes):
     plt.legend(legend)
     plt.show()
 
- 
+def calc_incidence(G):
+        A_ij=dict()
+        for edge in G.edges:
+            if edge[0] < edge[1]:
+                A_ij[edge[0], edge[1]] = 1
+                A_ij[edge[1], edge[0]] = -1
+            else:
+                A_ij[edge[0], edge[1]] = -1
+                A_ij[edge[1], edge[0]] = -1
+        return A_ij

@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 from utils import *
-np.random.seed(1)
+# np.random.seed(10)
 
 ####Asynchronous algorithms
 def random_gossip(temperature, A, tolerance=0.00001):
@@ -153,18 +153,11 @@ def random_gossip_node_change(temperature, G,pos,true_temp,var, tolerance=0.0000
 def PDMM_async(temperature, G,tolerance=10**-8,c=0.3):
     num_nodes = G.number_of_nodes()
     x=np.zeros([num_nodes,1])
-    A_ij=dict()
     converged = False
     loss = np.array([])
     avg_temp = np.mean(temperature)
     #initialise A_ij
-    for edge in G.edges:
-        if edge[0] < edge[1]:
-            A_ij[edge[0], edge[1]] = 1
-            A_ij[edge[1], edge[0]] = -1
-        else:
-            A_ij[edge[0], edge[1]] = -1
-            A_ij[edge[1], edge[0]] = -1
+    A_ij=calc_incidence(G)
 
     #initialise z_ij and y_ij
     z=dict()
@@ -194,7 +187,7 @@ def PDMM_async(temperature, G,tolerance=10**-8,c=0.3):
             loss = np.append(loss, np.sum((x - avg_temp)**2))
             converged = True
         else:
-            # print(np.sum((x- avg_temp)**2))
+            print(np.sum((x- avg_temp)**2))
             loss= np.append(loss, np.sum((x - avg_temp)**2))
   
         #update z_ij
@@ -206,20 +199,12 @@ def PDMM_async(temperature, G,tolerance=10**-8,c=0.3):
 def PDMM_async_TF(temperature, G, tolerance=10**-8, c=0.3, transmission_failure=0.1):
     num_nodes = G.number_of_nodes()
     x = np.zeros([num_nodes, 1])
-    A_ij = dict()
     converged = False
     loss = np.array([])
     avg_temp = np.mean(temperature)
 
     # Initialise A_ij
-    for edge in G.edges:
-        if edge[0] < edge[1]:
-            A_ij[edge[0], edge[1]] = 1
-            A_ij[edge[1], edge[0]] = -1
-        else:
-            A_ij[edge[0], edge[1]] = -1
-            A_ij[edge[1], edge[0]] = 1
-
+    A_ij=calc_incidence(G)
     # Initialise z_ij and y_ij
     z = dict()
     y = dict()
@@ -260,6 +245,87 @@ def PDMM_async_TF(temperature, G, tolerance=10**-8, c=0.3, transmission_failure=
             z[i, j] = y[j, i]
 
     return loss, transmissions
+
+def PDMM_async_node_change(temperature, G,pos,true_temp,var,tolerance=10**-8,c=0.3,node_change_status="add_bulk",averaging_method="update", max_iter=100000):
+    num_nodes = G.number_of_nodes()
+    x=np.zeros([num_nodes,1])
+    converged = False
+    loss = np.array([])
+    avg_temp = np.mean(temperature)
+    #initialise A_ij
+    A_ij=calc_incidence(G)
+
+    #initialise z_ij and y_ij
+    z=dict()
+    y=dict()
+    for i in np.arange(0,num_nodes):
+        for j in G.neighbors(i):
+            z[i,j]=0
+            y[i,j]=0
+            
+    transmissions=[]
+    tot_transmissions=0
+    iter=0
+    while not converged and iter<max_iter:
+        iter = iter+1
+        
+        #update x_i and y_ij
+        i = int(np.random.uniform(low=0, high=num_nodes))
+        #update x_i
+        x[i]=temperature[i]
+        for j in G.neighbors(i):
+            x[i]=x[i]-A_ij[i,j]*z[i,j]
+        x[i]=x[i]/(1+c*G.degree(i))
+        #update y_ij
+        for j in G.neighbors(i):
+            y[i,j]=z[i,j]+2*c*(x[i]*A_ij[i,j])
+        tot_transmissions=tot_transmissions+1
+        transmissions.append(tot_transmissions)
+
+        if np.sum((x- avg_temp)**2)< tolerance:
+            loss = np.append(loss, np.sum((x - avg_temp)**2))
+            converged = True
+        else:
+            print(np.sum((x- avg_temp)**2))
+            loss= np.append(loss, np.sum((x - avg_temp)**2))
+
+        #update z_ij
+        for j in G.neighbors(i):
+            z[i,j]=y[j,i]
+        
+        #implement removing/adding of nodes
+        if node_change_status=="add_bulk" and  iter ==5000:
+            for i in range(1,100):
+                #add one node, update graph, temperature and number of nodes
+                G,pos=add_node_to_graph(G,pos,num_nodes)
+                num_nodes =num_nodes+1
+                new_temp=np.random.normal(true_temp, np.sqrt(var))
+                temperature=np.append(temperature,new_temp)
+                x=np.append(x,0)
+                #initialise dictionary values
+                for j in G.neighbors(num_nodes-1):
+                    z[num_nodes-1,j]=0
+                    z[j,num_nodes-1]=0
+                    y[num_nodes-1,j]=0
+                    y[j,num_nodes-1]=0
+                A_ij=calc_incidence(G)
+                if averaging_method=="update":
+                    avg_temp = (avg_temp*(num_nodes-1)+new_temp)/num_nodes
+        elif node_change_status=="remove_bulk" and  iter ==5000:
+            for i in range(1,20):
+                #remove one node, update graph, temperature and number of nodes
+                node_ids_list = sorted(list(G.nodes()))
+                G.remove_node(node_ids_list[-1])
+                num_nodes =num_nodes-1
+                old_temp=temperature[num_nodes]
+                temperature=np.delete(temperature,-1)
+                x=np.delete(x,-1)
+                
+                if averaging_method=="update":
+                    avg_temp = (avg_temp*(num_nodes+1)-old_temp)/num_nodes
+
+    return loss,transmissions
+
 
 def async_distr_averaging(temperature,A,tolerance):
     """
