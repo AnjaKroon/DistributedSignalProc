@@ -20,7 +20,7 @@ def generate_rgg(num_nodes, radius, dimen, meas):
     plt.axis('equal')
     plt.xlabel('100 km^2')
     plt.ylabel('100 km^2')
-    plt.title("test")
+    plt.title("Graph of " + str(num_nodes) + " nodes with radius " + str(radius) + " and dimension " + str(dimen))
     plt.show()
 
     nx.set_node_attributes(rgg, meas, "temp")

@@ -16,14 +16,14 @@ def plot_single_error(array, name):
     plt.legend(name)
     plt.show()
 
-def plot_multiple_pairs(pairs):
+def plot_multiple_pairs(pairs, plot_name='e(k) vs. Transmissions'):
     for array, name in pairs:
         x_values = [x for x, _ in array]
         y_values = [y for _, y in array]
         plt.plot(x_values, y_values, label=name)
     plt.xlabel('Transmissions')
     plt.ylabel('||x_k - x_avg||^2')
-    plt.title('e(k) vs. Trans.')
+    plt.title(plot_name, fontweight='bold')
     plt.yscale('log') 
     plt.legend([name for _, name in pairs])
     plt.show()
