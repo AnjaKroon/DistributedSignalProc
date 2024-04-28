@@ -10,17 +10,19 @@ from visualization import plot_rgg_side_by_side
 
 '''
 SYNCH. DIST AVG
-1) Find optimal alpha
-2) Set up W matrix
-3) Set x(k-1) = x(0) for algorithm start
-4) While e(k) > epsilon:
-    x(k) = W*x(k-1)
-    e(k) = || . ||
-    x(k-1) = x(k)
-TRANSMISSIONS: for each iteration, transmissions increase by the number of edges in the graph
-Notice: W works on every entry in x(0) at each iteration, every link is active at each iteration -- confirm numerically
 '''
 def dist_avg_synch(graph, TOL):
+    '''
+    1) Find optimal alpha
+    2) Set up W matrix
+    3) Set x(k-1) = x(0) for algorithm start
+    4) While e(k) > epsilon:
+        x(k) = W*x(k-1)
+        e(k) = || . ||
+        x(k-1) = x(k)
+    TRANSMISSIONS: for each iteration, transmissions increase by the number of edges in the graph
+    Notice: W works on every entry in x(0) at each iteration, every link is active at each iteration -- confirm numerically
+    '''
     print("")
     print("------- SYNCH. DIST. AVG. ------- ")
     start_time = time.time()
@@ -87,22 +89,24 @@ def dist_avg_synch(graph, TOL):
 
 '''
 ASYNCH DIST AVG
-1) x(k-1) = x(0)
-2) while e(k) > epsilon:
-    uniformly select random node i
-    find all neighbors of node i
-    Two methods to average:
-        ''manual averaging of i and neighbor i values''
-            x(k) = avg(x_i U x_ni)
-        ''using the W matrix'' -- USED HERE
-            construct W matrix
-            check that W matrix obeys rules
-            x(k) = W(k)x(k-1)
-            x(k-1) = x(k)
-    e(k) = || . ||
-TRANSMISSIONS: per iteration of while loop = N(i)
 '''
 def dist_avg_asynch_W(graph, TOL):
+    '''
+    1) x(k-1) = x(0)
+    2) while e(k) > epsilon:
+        uniformly select random node i
+        find all neighbors of node i
+        Two methods to average:
+            ''manual averaging of i and neighbor i values''
+                x(k) = avg(x_i U x_ni)
+            ''using the W matrix'' -- USED HERE
+                construct W matrix
+                check that W matrix obeys rules
+                x(k) = W(k)x(k-1)
+                x(k-1) = x(k)
+        e(k) = || . ||
+    TRANSMISSIONS: per iteration of while loop = N(i)
+    '''
     print("")
     print("------- ASYNCH. DIST. AVG. (W)------- ")
     start_time = time.time()
@@ -187,23 +191,25 @@ def dist_avg_asynch_W(graph, TOL):
 
 '''
 ASYNCH DIST AVG
-1) x(k-1) = x(0)
-2) while e(k) > epsilon:
-    uniformly select random node i
-    find all neighbors of node i
-    Two methods to average:
-        ''manual averaging of i and neighbor i values'' -- USED HERE
-            x(k) = avg(x_i U x_ni)
-            e(k) = || . ||
-        ''using the W matrix'' 
-            construct W matrix
-            check that W matrix obeys rules
-            x(k) = W(k)x(k-1)
-            e(k) = || . ||
-            x(k-1) = x(k)
-TRANSMISSIONS: per iteration of while loop = N(i)
 '''
 def dist_avg_asynch_noW(graph, TOL):
+    '''
+    1) x(k-1) = x(0)
+    2) while e(k) > epsilon:
+        uniformly select random node i
+        find all neighbors of node i
+        Two methods to average:
+            ''manual averaging of i and neighbor i values'' -- USED HERE
+                x(k) = avg(x_i U x_ni)
+                e(k) = || . ||
+            ''using the W matrix'' 
+                construct W matrix
+                check that W matrix obeys rules
+                x(k) = W(k)x(k-1)
+                e(k) = || . ||
+                x(k-1) = x(k)
+    TRANSMISSIONS: per iteration of while loop = N(i)
+    '''
     print("")
     print("------- ASYNCH. DIST. AVG. (no W)------- ")
 
@@ -260,24 +266,26 @@ def dist_avg_asynch_noW(graph, TOL):
 
 '''
 RANDOMIZED GOSSIP
-1) x(k-1) = x(0)
-2) while e(k) > epsilon:
-    uniformly select random node i
-    uniformly select a neighbor of node i
-    Two methods to average:
-        ''manual averaging of i and neighbor i values'' -- USED HERE
-            x(k) = avg(x_i, one_rand_neighbor)
-            e(k) = || . ||
-        ''using the W matrix'' 
-            construct W matrix
-            check that W matrix obeys rules
-            x(k) = W(k)x(k-1)
-            e(k) = || . ||
-            x(k-1) = x(k)
-TRANSMISSIONS: per iteration of while loop = 1
-* decided to only implement the without W implementation because matrix multiplications implodes the time
 '''
 def random_gossip_noW(graph, TOL):
+    '''
+    1) x(k-1) = x(0)
+    2) while e(k) > epsilon:
+        uniformly select random node i
+        uniformly select a neighbor of node i
+        Two methods to average:
+            ''manual averaging of i and neighbor i values'' -- USED HERE
+                x(k) = avg(x_i, one_rand_neighbor)
+                e(k) = || . ||
+            ''using the W matrix'' 
+                construct W matrix
+                check that W matrix obeys rules
+                x(k) = W(k)x(k-1)
+                e(k) = || . ||
+                x(k-1) = x(k)
+    TRANSMISSIONS: per iteration of while loop = 1
+    * decided to only implement the without W implementation because matrix multiplications implodes the time
+    '''
     print("")
     print("------- RANDOM GOSSIP (no W)------- ")
 
@@ -329,8 +337,11 @@ def random_gossip_noW(graph, TOL):
     return all_temps[0], std_devs, errors, transmissions
 
 '''
-PDMM Synchronous
-1) Initialize variables
+PDMM SYNCHRONOUS
+'''
+def pdmm_synch(graph, TOL, c=0.3):
+    '''
+    1) Initialize variables
     x_0 = 0                                     (dimension = # nodes (n) x 1)
     a = sensor measurements vector              (dimension = # nodes (n) x 1)
     z_00 = 0                                    (dimension = [[# N(1) x 1 ], [# N(2) x 1], ... , [# N(n) x 1]]) # implemented as dict
@@ -339,22 +350,21 @@ PDMM Synchronous
     d = graph degree vector                     (dimension = # nodes (n) x 1)
     A = not adjacency matrix  (make method)     (dimension = # edges (m) x # nodes (n)) # implemented as dict
 
-2) while e(k) > epsilon:
-    for all nodes i,
-        update x_i(k) = ( a_i - sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
-        for all neighbors of i called j,
-            update y_ij(k) = z_ij(k-1) + 2*c*x_i(k)*A_ij
-    for all nodes i,
-        for all N(i), 
-            Send to node j the value y_ij. Node j will see it as y_ji.       # Due to implementation, this step can be skipped
-            transmissions += 1
-    for all nodes i,
-        for all neighbors of i called j,
-            z_ij = y_ji  
-    e(k) = ||a - true_avg||_2^2
-TRANSMISSIONS: for all nodes i, for N(i), one transmission made
-'''
-def pdmm_synch(graph, TOL, c=0.3):
+    2) while e(k) > epsilon:
+        for all nodes i,
+            update x_i(k) = ( a_i - sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
+            for all neighbors of i called j,
+                update y_ij(k) = z_ij(k-1) + 2*c*x_i(k)*A_ij
+        for all nodes i,
+            for all N(i), 
+                Send to node j the value y_ij. Node j will see it as y_ji.       # Due to implementation, this step can be skipped
+                transmissions += 1
+        for all nodes i,
+            for all neighbors of i called j,
+                z_ij = y_ji  
+        e(k) = ||a - true_avg||_2^2
+    TRANSMISSIONS: for all nodes i, for N(i), one transmission made
+    '''
     print("")
     print("------- PDMM Synchronous ------- ")
 
@@ -408,8 +418,11 @@ def pdmm_synch(graph, TOL, c=0.3):
     return x[0], std_devs, errors, transmissions
 
 '''
-PDMM Asynchronous
-1) Initialize variables
+PDMM ASYNCHRONOUS
+'''
+def pdmm_async(graph, TOL, c=0.4):
+    '''
+    1) Initialize variables
     x_0 = 0                                     (dimension = # nodes (n) x 1)
     a = sensor measurements vector              (dimension = # nodes (n) x 1)
     z_00 = 0                                    (dimension = [[# N(1) x 1 ], [# N(2) x 1], ... , [# N(n) x 1]]) # implemented as dict
@@ -418,23 +431,22 @@ PDMM Asynchronous
     d = graph degree vector                     (dimension = # nodes (n) x 1)
     A = not adjacency matrix  (make method)     (dimension = # edges (m) x # nodes (n)) # implemented as dict
 
-2) while e(k) > epsilon:
-    select a random node i
-        update x_i(k) = ( a_i - sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
-        for all neighbors of i called j,
-            update y_ij(k) = z_ij(k-1) + 2*c*x_i(k)*A_ij
-    for all nodes i,
-        for all N(i), 
-            Send to node j the value y_ij. Node j will see it as y_ji.       # Due to implementation, this step can be skipped
-            transmissions += 1
-    for the single randomly selected node i,
-        for all neighbors of i called j,
-            z_ij = y_ji  
-    e(k) = ||a - true_avg||_2^2
-TRANSMISSIONS: for all nodes i, for N(i), one transmission made
-UNICAST VERSION
-'''
-def pdmm_async(graph, TOL, c=0.4):
+    2) while e(k) > epsilon:
+        select a random node i
+            update x_i(k) = ( a_i - sum(A_ij*z_ij(k-1)) ) / (1 + c*d_i)          # a_ij*z_ij(k-1) -> sum of all neighbors of i
+            for all neighbors of i called j,
+                update y_ij(k) = z_ij(k-1) + 2*c*x_i(k)*A_ij
+        for all nodes i,
+            for all N(i), 
+                Send to node j the value y_ij. Node j will see it as y_ji.       # Due to implementation, this step can be skipped
+                transmissions += 1
+        for the single randomly selected node i,
+            for all neighbors of i called j,
+                z_ij = y_ji  
+        e(k) = ||a - true_avg||_2^2
+    TRANSMISSIONS: for all nodes i, for N(i), one transmission made
+    UNICAST VERSION
+    '''
     print("")
     print("------- PDMM Asynchronous ------- ")
 
@@ -488,25 +500,27 @@ def pdmm_async(graph, TOL, c=0.4):
 
 
 '''
-RANDOMIZED GOSSIP TRANSMISSION FAILURES
-1) x(k-1) = x(0)
-2) while e(k) > epsilon:
-    uniformly select random node i
-    uniformly select a neighbor of node i
-    Two methods to average:
-        ''manual averaging of i and neighbor i values'' -- USED HERE
-            x(k) = avg(x_i, one_rand_neighbor)
-            e(k) = || . ||
-        ''using the W matrix'' 
-            construct W matrix
-            check that W matrix obeys rules
-            x(k) = W(k)x(k-1)
-            e(k) = || . ||
-            x(k-1) = x(k)
-TRANSMISSIONS: per iteration of while loop = 1
-* decided to only implement the without W implementation because matrix multiplications implodes the time
+RANDOMIZED GOSSIP WITH TRANSMISSION FAILURES
 '''
 def random_gossip_TF(graph, TOL, FAILURE_RATE=0.0):
+    '''
+    1) x(k-1) = x(0)
+    2) while e(k) > epsilon:
+        uniformly select random node i
+        uniformly select a neighbor of node i
+        Two methods to average:
+            ''manual averaging of i and neighbor i values'' -- USED HERE
+                x(k) = avg(x_i, one_rand_neighbor)
+                e(k) = || . ||
+            ''using the W matrix'' 
+                construct W matrix
+                check that W matrix obeys rules
+                x(k) = W(k)x(k-1)
+                e(k) = || . ||
+                x(k-1) = x(k)
+    TRANSMISSIONS: per iteration of while loop = 1
+    * decided to only implement the without W implementation because matrix multiplications implodes the time
+    '''
     print("")
     print("------- RANDOM GOSSIP w/ Transmission Failures------- ")
 
@@ -563,26 +577,18 @@ def random_gossip_TF(graph, TOL, FAILURE_RATE=0.0):
 
 '''
 RANDOMIZED GOSSIP WITH NODE DROP/ADD
-1) x(k-1) = x(0)
-2) while e(k) > epsilon:
-    After M iterations have occured             # test various points M
-        drop X% of nodes from the graph
-    uniformly select random node i
-    uniformly select a neighbor of node i
-    Two methods to average:
-        ''manual averaging of i and neighbor i values'' -- USED HERE
-            x(k) = avg(x_i, one_rand_neighbor)
-            e(k) = || . ||
-        ''using the W matrix'' 
-            construct W matrix
-            check that W matrix obeys rules
-            x(k) = W(k)x(k-1)
-            e(k) = || . ||
-            x(k-1) = x(k)
-TRANSMISSIONS: per iteration of while loop = 1
-* decided to only implement the without W implementation because matrix multiplications implodes the time
 '''
 def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"):
+    '''
+    Random Gossip Algorithm
+    4 OPTIONS:
+        * Dropping nodes in bulk
+        * Droppping nodes sequentially
+        * Adding nodes in bulk
+        * Adding nodes sequentially
+    Access these options by setting EITHER DROP_RATE > 0.0 OR ADD_RATE > 0.0
+    and by setting type to either "bulk" or "seq"
+    '''
     print("")
     if (DROP_RATE > 0.0): # Dropping nodes
         print("------- RANDOM GOSSIP w/ " + str(type) + " DROP: " + str(DROP_RATE) + " ------- ")
@@ -604,6 +610,15 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"
     ADDED_FLAG = False
 
     all_nodes = list(nx.nodes(graph))
+
+    num_nodes_drop = int(len(all_nodes) * DROP_RATE) # in total this is how many nodes you want to drop
+    num_nodes_dropped_already = 0
+
+    num_nodes_add = int(len(all_nodes) * ADD_RATE) # in total this is how many nodes you want to add
+    print("Number of nodes to add: ", num_nodes_add)
+    num_nodes_added_already = 0
+
+    
     while (np.linalg.norm(list(all_temps.values()) - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
         
         # CASE 1: BULK DROP
@@ -629,9 +644,7 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"
             DROPPED_FLAG = True
 
         # CASE 2: SEQUENTIAL DROP
-        num_nodes_drop = int(len(all_nodes) * DROP_RATE) # in total this is how many nodes you want to drop
-        num_nodes_dropped_already = 0
-        if (transmissions > 2000 and DROPPED_FLAG == False and type == "seq" and transmissions % 100 == 0 and DROP_RATE > 0.0): # only drop every 100 iterations of the while loop
+        if (transmissions > 2000 and DROPPED_FLAG == False and type == "seq" and transmissions % 1000 == 0 and DROP_RATE > 0.0): # only drop every 100 iterations of the while loop
             all_nodes = list(nx.nodes(graph))           # get current list of nodes
             node_to_drop = random.choice(all_nodes)     # drop a single random node from the graph
             graph.remove_node(node_to_drop) # drop a single random node from the graph
@@ -677,8 +690,6 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"
                         distance = np.linalg.norm(np.array(graph.nodes[node]['pos']) - np.array(graph.nodes[len(all_nodes) + i + 1]['pos']))
                         if distance <= RADIUS:
                             graph.add_edge(node, len(all_nodes) + i + 1)
-                
-                
 
             # to check this was done correctly, print the graph before and after adding nodes
             plot_rgg_side_by_side(graph_old, graph)
@@ -695,6 +706,44 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"
             true_avg = np.mean(list(all_temps.values()))
             
             ADDED_FLAG = True
+        
+        # CASE 4: SEQUENTIAL ADD
+        if (transmissions > 2000 and ADDED_FLAG == False and type == "seq" and transmissions % 1000 == 0 and ADD_RATE > 0.0): # only add every 100 iterations of the while loop
+            graph_old = graph.copy()
+            all_nodes = list(nx.nodes(graph))           # get current list of nodes
+            new_measurement = generate_measurements(1)
+            graph.add_node(len(all_nodes)+1, pos=(random.uniform(0, 1), random.uniform(0, 1)), temp=new_measurement[0])
+            pos = nx.get_node_attributes(graph, 'pos') 
+            # print(len(pos), "should be equal to ", len(all_nodes) + 1)
+
+            # randomly connect it to the graph in a random geometric manner
+            RADIUS = np.sqrt(np.log(2*len(all_nodes)+1)) / len(all_nodes)+1
+            # print("Radius: ", RADIUS)
+            for node in graph.nodes():
+                if node != len(all_nodes) + 1:
+                    distance = np.linalg.norm(np.array(graph.nodes[node]['pos']) - np.array(graph.nodes[len(all_nodes) + 1]['pos']))
+                    if distance <= RADIUS:
+                        graph.add_edge(node, len(all_nodes) + 1)
+
+            # to check this was done correctly, print the graph before and after adding singular node
+            # plot_rgg_side_by_side(graph_old, graph)
+
+            # recalculate necessary things for computations later to continue
+            all_temps = nx.get_node_attributes(graph, "temp")
+            all_nodes = list(nx.nodes(graph))
+            true_avg = np.mean(list(all_temps.values()))
+
+            num_nodes_added_already += 1
+
+            # Check if the graph is connected
+            if not nx.is_connected(graph):
+                print("\033[91mERROR: After the nodes have been dropped in sequence, the graph is no longer connected.\033[0m")
+                break
+
+            if num_nodes_added_already == num_nodes_add:
+                # print("Number of nodes AFTER SEQ DROP: ", len(all_nodes))
+                ADDED_FLAG = True
+
 
         # uniformly select random node i
         node_i = random.choice(all_nodes)
@@ -711,7 +760,6 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE = 0.0, type="bulk"
 
         # TRANSMISSIONS: per iteration of while loop = 1
         transmissions += 1
-        if (transmissions % 1000 == 0): print("Tr: ", transmissions)
 
         # update values for plotting later
         std_dev = statistics.stdev(list(all_temps.values()))

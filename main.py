@@ -127,9 +127,10 @@ def main():
     # run_pdmm_TF(rand_geo_gr, TOL)
     # run_comparison_pdmm_TF(rand_geo_gr, TOL)
 
-    '''
+    
     
     # TESTING BULK DROP
+    '''
     # only have drop or add > 0, not both
     drop = 0.1
     add = 0.0
@@ -138,9 +139,10 @@ def main():
     # plot_single_error(error_rg_tf_dropadd, ("Random Gossip with Dropping "+str(dr)+" and Adding "+str(fr)))
     plot_multiple_pairs(((error_rg_noW, "Random Gossip (Drop=0%)"),
                         (error_rg_tf_drop_bulk, "Random Gossip (Drop=" + str(drop*100) + "%)")), "Random Gossip: Drop: " + str(drop*100) + "% Type: Bulk ")
-    
+    ''' 
 
     # TESTING SEQUENTIAL DROP
+    '''
     # Regenerate graph so graph is full size
     temps = generate_measurements(NODES)
     dict_temps = vector_to_dict(temps)
@@ -154,8 +156,9 @@ def main():
     plot_multiple_pairs(((error_rg_noW, "Random Gossip (Drop=0%)"),
                         (error_rg_tf_drop_seq, "Random Gossip (Drop=" + str(drop*100) + "%)")), "Random Gossip: Drop: " + str(drop*100) + "% Type: Sequential ")
     '''
-
+    
     # TESTING BULK ADD
+    '''
     # Regenerate graph so graph is full size
     temps = generate_measurements(NODES)
     dict_temps = vector_to_dict(temps)
@@ -168,6 +171,23 @@ def main():
     avg_rg_tf_add_bulk, stdev_rg_tf_add_bulk, error_rg_tf_add_bulk, trans_rg_tf_add_bulk= random_gossip_dropadd(rand_geo_gr, TOL, drop, add, tp)
     plot_multiple_pairs(((error_rg_noW, "Random Gossip (Add=0%)"),
                         (error_rg_tf_add_bulk, "Random Gossip (Add=" + str(add*100) + "%)")), "Random Gossip: Add: " + str(add*100) + "% Type: Bulk ")
+    '''
+
+    # TESTING SEQUENTIAL ADD
+    
+    # Regenerate graph so graph is full size
+    temps = generate_measurements(NODES)
+    dict_temps = vector_to_dict(temps)
+    rand_geo_gr = generate_rgg(NODES, RAD, DIM, dict_temps)
+
+    drop = 0.0
+    add = 0.1
+    tp = "seq"
+    
+    avg_rg_tf_add_seq, stdev_rg_tf_add_seq, error_rg_tf_add_seq, trans_rg_tf_add_seq= random_gossip_dropadd(rand_geo_gr, TOL, drop, add, tp)
+    plot_multiple_pairs(((error_rg_noW, "Random Gossip (Add=0%)"),
+                        (error_rg_tf_add_seq, "Random Gossip (Add=" + str(add*100) + "%)")), "Random Gossip: Add: " + str(add*100) + "% Type: Sequential ")
+    
 
 if __name__ == "__main__":
     main()
