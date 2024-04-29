@@ -5,22 +5,28 @@ from utils import *
 from algo import *
 
 
-np.random.seed(1)
+# np.random.seed(1)
 
 
 
 required_probability=0.9999
-num_nodes, G,A,pos=build_random_graph(200,required_probability,fix_num_nodes=True)
+num_nodes, G,A,pos=build_random_graph(100,required_probability,fix_num_nodes=True)
 print("num_nodes:",num_nodes)
 
 #now to generate measured values for the temperature sensors ins some flat 3d field
 temperature=generate_temp_field(num_nodes,10,25)
 tolerance=10**-8
+c=0.3
+#plotting node add/removal ofr random gossip
+# loss_random,temperature_rand=random_gossip(temperature.copy(),A,tolerance)
+# loss_random_add,temperature_rand_add=random_gossip_node_change(temperature.copy(),G,pos,25,10,tolerance,"remove_bulk",averaging_method="update",max_iter=100000)
+# plot_log_convergence([loss_random_add, loss_random],[np.arange(1,loss_random_add.shape[0]+1),np.arange(1,loss_random.shape[0]+1)],['Random Gossip remove ',"Random gossip"],num_nodes)
 
 
-loss_random,temperature_rand=random_gossip(temperature.copy(),A,tolerance)
-loss_random_add,temperature_rand_add=random_gossip_node_change(temperature.copy(),G,pos,25,10,tolerance,"remove_bulk",averaging_method="other",max_iter=100000)
-plot_log_convergence([loss_random_add, loss_random],[np.arange(1,loss_random_add.shape[0]+1),np.arange(1,loss_random.shape[0]+1)],['Random Gossip remove ',"Random gossip"],num_nodes)
+# # #plotting node add/removal for PDMM async
+# loss_pdmm_async,trans_pdmm_async=PDMM_async(temperature,G,tolerance,c)
+# loss_pdmm_async_node,trans_pdmm_async_node=PDMM_async_node_change(temperature,G,pos,25,10,tolerance,c,"remove_bulk")
+# plot_log_convergence([loss_pdmm_async,loss_pdmm_async_node],[trans_pdmm_async,trans_pdmm_async_node],['PDMM_Async ',"PDMM_Async_remove"],num_nodes)
 
 
 
@@ -39,7 +45,7 @@ plot_log_convergence([loss_random_add, loss_random],[np.arange(1,loss_random_add
 # plt.xlabel('c')
 # plt.ylabel('Transmissions')
 # plt.show()
-c=0.3
+
 
 # loss_random,temperature_rand=random_gossip(temperature.copy(),A,tolerance)
 # loss_random_tf,temperature_rand_tf=random_gossip_TF(temperature.copy(),A,tolerance,0.5)
