@@ -13,8 +13,9 @@ import numpy as np
 # NODES = 100
 # RAD = 0.3067   # 100 km, radius is 1 km 1/100 = 0.01
 
-NODES = 200
+NODES = 100
 RAD = np.sqrt(np.log(2*NODES) / NODES)
+print(RAD)
 
 #AUTO
 # PROB_CONN = 0.9
@@ -188,6 +189,10 @@ def main():
     plot_multiple_pairs( ((error_pdmm_async, "PDMM Asynch"), 
                         (error_pdmm_drop, "PDMM Asynch (Drop=50%)")), "Comparing PDMM: Baseline & Bulk Drop")
     
+    temps = generate_measurements(NODES)
+    dict_temps = vector_to_dict(temps)
+    rand_geo_gr = generate_rgg(NODES, RAD, DIM, dict_temps)
+
     # TESTING PDMM BULK ADD (NEW METHOD)
     avg_pdmm_add_bulk, stdev_pdmm__add_bulk, error_pdmm_add, trans_pdmm_add_bulk = pdmm_asynch_justdrop(rand_geo_gr, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.5)
     plot_multiple_pairs( ((error_pdmm_async, "PDMM Asynch"), 

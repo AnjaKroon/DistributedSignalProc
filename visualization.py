@@ -29,7 +29,7 @@ def plot_multiple_pairs(pairs, plot_name='e(k) vs. Transmissions'):
     plt.legend([name for _, name in pairs])
     plt.show()
 
-def plot_rgg_side_by_side(rgg1, rgg2):
+def plot_rgg_side_by_side(rgg1, rgg2, name='Modified Graph'):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
     
     pos1 = nx.get_node_attributes(rgg1, 'pos')
@@ -44,7 +44,7 @@ def plot_rgg_side_by_side(rgg1, rgg2):
     ax2.axis('equal')
     ax2.set_xlabel('100 km^2')
     ax2.set_ylabel('100 km^2')
-    ax2.set_title("Modified Graph")
+    ax2.set_title(name)
     
     plt.tight_layout()
     plt.show()

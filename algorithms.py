@@ -635,7 +635,7 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
                 print("\033[91mERROR: After the nodes have been dropped in bulk, the graph is no longer connected.\033[0m")
                 break
 
-            plot_rgg_side_by_side(graph_old, graph)
+            plot_rgg_side_by_side(graph_old, graph, "Bulk Drop")
             
             # Recalculation after nodes drop
             all_nodes = list(nx.nodes(graph))
@@ -694,7 +694,7 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
                             graph.add_edge(node, len(all_nodes) + i + 1)
 
             # to check this was done correctly, print the graph before and after adding nodes
-            plot_rgg_side_by_side(graph_old, graph)
+            plot_rgg_side_by_side(graph_old, graph, "Bulk Add")
 
             # Check if the graph is connected
             if not nx.is_connected(graph):
@@ -930,7 +930,7 @@ def pdmm_asynch_dropadd(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
                 break
 
             # plot the two graphs
-            plot_rgg_side_by_side(graph_old, graph)
+            plot_rgg_side_by_side(graph_old, graph, "Bulk Drop")
 
             all_nodes = list(nx.nodes(graph))
             print("Number of nodes AFTER DROP: ", len(all_nodes))
@@ -1047,7 +1047,7 @@ def pdmm_asynch_justdrop(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
         #     print(np.linalg.norm(x - np.ones(len(all_nodes)) * true_avg)**2)
         
         # BULK DROP
-        if (transmissions > 20000 and DROP_RATE > 0.0 and DROPPED_FLAG == False):
+        if (transmissions > 2000 and DROP_RATE > 0.0 and DROPPED_FLAG == False):
             graph_old = graph.copy()
             print("Number of nodes BEFORE DROP: ", len(all_nodes))
             num_nodes_drop = int(len(all_nodes) * DROP_RATE)
@@ -1055,13 +1055,13 @@ def pdmm_asynch_justdrop(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
             print(nodes_to_drop)
             graph.remove_nodes_from(nodes_to_drop)
 
+            # Check visually that nodes were removed
+            plot_rgg_side_by_side(graph_old, graph, "Bulk Drop")
+
             # Check if the graph is connected
             if not nx.is_connected(graph):
                 print("\033[91mERROR: After the nodes have been dropped in bulk, the graph is no longer connected.\033[0m")
                 break
-
-            # Check visually that nodes were removed
-            plot_rgg_side_by_side(graph_old, graph)
 
             # Recalculate necessary variables
             all_nodes = list(nx.nodes(graph))
@@ -1087,7 +1087,8 @@ def pdmm_asynch_justdrop(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
             print(DROPPED_FLAG)
 
         # BULK ADD
-        if (transmissions > 20000 and ADD_RATE > 0.0 and ADDED_FLAG == False):
+        if (transmissions > 2000 and ADD_RATE > 0.0 and ADDED_FLAG == False):
+            old_num_nodes = len(all_nodes)
             graph_old = graph.copy()
             print("Number of nodes BEFORE ADD: ", len(all_nodes))
             num_nodes_add = int(len(all_nodes) * ADD_RATE)
@@ -1099,7 +1100,10 @@ def pdmm_asynch_justdrop(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
                 graph.add_node(len(all_nodes)+i, pos=(random.uniform(0, 1), random.uniform(0, 1)), temp=new_measurements[i])
                 pos = nx.get_node_attributes(graph, 'pos') 
                 # RADIUS = np.sqrt(np.log(2*len(all_nodes)+i+1)) / len(all_nodes)+i+1
-                RADIUS = np.sqrt(np.log(2*len(all_nodes)+i)) / len(all_nodes)+i
+                # RADIUS = np.sqrt(np.log(2*len(all_nodes)+i)) / len(all_nodes)+i
+
+                RADIUS = np.sqrt(np.log(2*old_num_nodes) / old_num_nodes)
+
                 for node in graph.nodes():
                     # if node != len(all_nodes) + i + 1:
                     if node != len(all_nodes) + i:
@@ -1109,13 +1113,15 @@ def pdmm_asynch_justdrop(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
                             # graph.add_edge(node, len(all_nodes) + i + 1)
                             graph.add_edge(node, len(all_nodes) + i)
             
+            # Check visually that nodes were added
+            plot_rgg_side_by_side(graph_old, graph, "Bulk Add")
+
             # Check if the graph is connected
             if not nx.is_connected(graph):
                 print("\033[91mERROR: After the nodes have been added in bulk, the graph is no longer connected.\033[0m")
                 break
 
-            # Check visually that nodes were added
-            plot_rgg_side_by_side(graph_old, graph)
+            
 
             # Recalculate necessary variables
             all_nodes = list(nx.nodes(graph))
