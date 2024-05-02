@@ -85,7 +85,7 @@ def random_gossip_TF(temperature, A, tolerance=0.00001, transmission_failure=0.1
             loss= np.append(loss, np.sum((temperature - avg_temp)**2))
     return loss,temperature
 
-def random_gossip_node_change(temperature, G,pos,true_temp,var, tolerance=0.00001,node_change_status="add_bulk",averaging_method="update", max_iter=100000):
+def random_gossip_node_change(temperature, G,pos,true_temp,var, r_c,tolerance=0.00001,node_change_status="add_bulk",averaging_method="update", max_iter=100000,node_change_p=0.1):
     """
     Perform random gossip algorithm to update the temperature values.
 
@@ -99,6 +99,7 @@ def random_gossip_node_change(temperature, G,pos,true_temp,var, tolerance=0.0000
     numpy.ndarray: The loss values at each iteration until convergence.
 
     """
+    print("Started RG node change algorithm num_nodes ",G.number_of_nodes())
     A = nx.adjacency_matrix(G).toarray()
     num_nodes = np.shape(A)[0]
     converged = False
@@ -119,18 +120,20 @@ def random_gossip_node_change(temperature, G,pos,true_temp,var, tolerance=0.0000
         temperature[node_j]=avg
 
         #implement removing/adding of nodes
-        if node_change_status=="add_bulk" and  iter ==5000:
-            for i in range(1,40):
+        if node_change_status=="add_bulk" and  iter ==20000:
+            num_add=int(G.number_of_nodes()*node_change_p)
+            for i in range(1,num_add):
                 #add one node, update graph, temperature and number of nodes
                 num_nodes =num_nodes+1
-                G,pos=add_node_to_graph(G,pos,num_nodes)
+                G,pos=add_node_to_graph(G,pos,num_nodes,r_c)
                 A = nx.adjacency_matrix(G).toarray()
                 new_temp=np.random.normal(true_temp, np.sqrt(var))
                 temperature=np.append(temperature,new_temp)
                 if averaging_method=="update":
                     avg_temp = (avg_temp*(num_nodes-1)+new_temp)/num_nodes
-        elif node_change_status=="remove_bulk" and  iter ==5000:
-            for i in range(1,40):
+        elif node_change_status=="remove_bulk" and  iter ==20000:
+            num_rem=int(G.number_of_nodes()*node_change_p)
+            for i in range(1,num_rem):
                 #remove one node, update graph, temperature and number of nodes
                 node_ids_list = sorted(list(G.nodes()))
                 G.remove_node(node_ids_list[-1])
@@ -138,8 +141,10 @@ def random_gossip_node_change(temperature, G,pos,true_temp,var, tolerance=0.0000
                 A = nx.adjacency_matrix(G).toarray()
                 old_temp=temperature[num_nodes]
                 temperature=np.delete(temperature,-1)
+
                 if averaging_method=="update":
-                    avg_temp = (avg_temp*(num_nodes+1)-old_temp)/num_nodes
+                    # avg_temp = (avg_temp*(num_nodes+1)-old_temp)/num_nodes
+                    avg_temp = np.mean(temperature)
 
         iter =iter+1
         if np.sum((temperature - avg_temp)**2)< tolerance:
@@ -148,6 +153,7 @@ def random_gossip_node_change(temperature, G,pos,true_temp,var, tolerance=0.0000
         else:
             # print(iter,"\t",np.sum((temperature - avg_temp)**2))
             loss= np.append(loss, np.sum((temperature - avg_temp)**2))
+    print("Finished algorithm num_nodes ",G.number_of_nodes())
     return loss,temperature
 
 def PDMM_async(temperature, G,tolerance=10**-8,c=0.3):
@@ -187,7 +193,7 @@ def PDMM_async(temperature, G,tolerance=10**-8,c=0.3):
             loss = np.append(loss, np.sum((x - avg_temp)**2))
             converged = True
         else:
-            print(np.sum((x- avg_temp)**2))
+            # print(np.sum((x- avg_temp)**2))
             loss= np.append(loss, np.sum((x - avg_temp)**2))
   
         #update z_ij
@@ -246,7 +252,8 @@ def PDMM_async_TF(temperature, G, tolerance=10**-8, c=0.3, transmission_failure=
 
     return loss, transmissions
 
-def PDMM_async_node_change(temperature, G,pos,true_temp,var,tolerance=10**-8,c=0.3,node_change_status="add_bulk",averaging_method="update", max_iter=100000):
+def PDMM_async_node_change(temperature , G,pos,true_temp,var,r_c,tolerance=10**-8,c=0.3,node_change_status="add_bulk",averaging_method="update", max_iter=100000,node_change_p=0.1):
+    print("Started PDMM node change algorithm num_nodes ",G.number_of_nodes())
     num_nodes = G.number_of_nodes()
     x=np.zeros([num_nodes,1])
     converged = False
@@ -268,7 +275,6 @@ def PDMM_async_node_change(temperature, G,pos,true_temp,var,tolerance=10**-8,c=0
     iter=0
     while not converged and iter<max_iter:
         iter = iter+1
-        
         #update x_i and y_ij
         i = int(np.random.uniform(low=0, high=num_nodes))
         #update x_i
@@ -286,7 +292,7 @@ def PDMM_async_node_change(temperature, G,pos,true_temp,var,tolerance=10**-8,c=0
             loss = np.append(loss, np.sum((x - avg_temp)**2))
             converged = True
         else:
-            print(np.sum((x- avg_temp)**2))
+            # print(np.sum((x- avg_temp)**2))
             loss= np.append(loss, np.sum((x - avg_temp)**2))
 
         #update z_ij
@@ -294,10 +300,11 @@ def PDMM_async_node_change(temperature, G,pos,true_temp,var,tolerance=10**-8,c=0
             z[i,j]=y[j,i]
         
         #implement removing/adding of nodes
-        if node_change_status=="add_bulk" and  iter ==5000:
-            for i in range(1,100):
+        if node_change_status=="add_bulk" and  iter == 20000:
+            num_add=int(G.number_of_nodes()*node_change_p)
+            for i in range(1,num_add):
                 #add one node, update graph, temperature and number of nodes
-                G,pos=add_node_to_graph(G,pos,num_nodes)
+                G,pos=add_node_to_graph(G,pos,num_nodes,r_c)
                 num_nodes =num_nodes+1
                 new_temp=np.random.normal(true_temp, np.sqrt(var))
                 temperature=np.append(temperature,new_temp)
@@ -311,8 +318,10 @@ def PDMM_async_node_change(temperature, G,pos,true_temp,var,tolerance=10**-8,c=0
                 A_ij=calc_incidence(G)
                 if averaging_method=="update":
                     avg_temp = (avg_temp*(num_nodes-1)+new_temp)/num_nodes
-        elif node_change_status=="remove_bulk" and  iter ==5000:
-            for i in range(1,20):
+                    # avg_temp = np.mean(temperature)
+        elif node_change_status=="remove_bulk" and  iter == 20000:
+            num_rem=int(G.number_of_nodes()*node_change_p)
+            for i in range(1,num_rem):
                 #remove one node, update graph, temperature and number of nodes
                 node_ids_list = sorted(list(G.nodes()))
                 G.remove_node(node_ids_list[-1])
@@ -320,10 +329,10 @@ def PDMM_async_node_change(temperature, G,pos,true_temp,var,tolerance=10**-8,c=0
                 old_temp=temperature[num_nodes]
                 temperature=np.delete(temperature,-1)
                 x=np.delete(x,-1)
-                
+
                 if averaging_method=="update":
                     avg_temp = (avg_temp*(num_nodes+1)-old_temp)/num_nodes
-
+    print("num_nodes ",G.number_of_nodes())
     return loss,transmissions
 
 
@@ -357,6 +366,57 @@ def async_distr_averaging(temperature,A,tolerance):
         else:
             loss_a = np.append(loss_a, np.sum((temperature - avg_temp)**2))
 
+    return loss_a,transmissions,temperature
+
+
+def async_distr_averaging_TF(temperature,A,tolerance,tf):
+    """
+    Perform asynchronous distributed averaging algorithm.
+
+    Returns:
+    numpy.ndarray: The loss values at each iteration until convergence.
+
+    """
+    num_nodes = np.shape(A)[0]
+    converged = False
+    loss_a = np.array([0])
+    transmissions = np.array([0])
+    avg_temp = np.mean(temperature)
+    iter=0
+    while not converged and transmissions[-1]<100000:
+        type_tf=0
+        if np.random.uniform(low=0, high=1)<0.5:
+            type_tf=1
+
+        node_i = int(np.random.uniform(low=0, high=num_nodes))
+        i_neigh = np.transpose(np.nonzero(A[node_i, :]))
+        num_neigh = np.shape(i_neigh)[0]
+        
+        if type_tf==1 and np.random.uniform(low=0, high=1) < tf:
+            # Generate a random index to delete
+            index_to_delete = np.random.randint(i_neigh.size)
+            # Delete the element at the random index
+            i_neigh = np.delete(i_neigh, index_to_delete)
+        
+        # update equation
+        avg_val= (np.sum(temperature[i_neigh])+temperature[node_i]) / (num_neigh+1)
+        transmissions = np.append(transmissions, num_neigh+transmissions[-1] if transmissions.size > 0 else num_neigh)
+        temperature[node_i] = avg_val
+
+        if type_tf==0 and np.random.uniform(low=0, high=1) < tf:
+            # Generate a random index to delete
+            index_to_delete = np.random.randint(i_neigh.size)
+            # Delete the element at the random index
+            i_neigh = np.delete(i_neigh, index_to_delete)
+        
+        temperature[i_neigh] = avg_val
+
+        if np.sum((temperature - avg_temp)**2)< tolerance:
+            loss_a = np.append(loss_a, np.sum((temperature - avg_temp)**2))
+            converged = True
+        else:
+            loss_a = np.append(loss_a, np.sum((temperature - avg_temp)**2))
+        iter=iter+1
     return loss_a,transmissions,temperature
 
 ####Synchronous algorithm
