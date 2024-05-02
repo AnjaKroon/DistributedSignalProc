@@ -5,7 +5,7 @@
 # Need to do random gossip algorithm, and another second decentralized asynchonous algorithm
 
 from utils import generate_rgg, generate_measurements, vector_to_dict
-from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch, pdmm_async, random_gossip_TF, pdmm_async_tf, random_gossip_dropadd, pdmm_asynch_dropadd, dist_avg_asynch_noW_tf
+from algorithms import dist_avg_synch, dist_avg_asynch_W, dist_avg_asynch_noW, random_gossip_noW, pdmm_synch, pdmm_async, random_gossip_TF, pdmm_async_tf, random_gossip_dropadd, pdmm_asynch_dropadd, dist_avg_asynch_noW_tf, dist_avg_asynch_noW_dropadd
 from visualization import plot_single_error, plot_multiple_pairs, plot_c_transmissions, plot_rgg_nodes
 import numpy as np
 
@@ -48,16 +48,37 @@ def main():
     avg_DA_TF_zero, stdev_DA_TF_25, err_DA_TF_25, trans_DA_TF_25 = dist_avg_asynch_noW_tf(rand_geo_gr, TOL, FAILURE_RATE=0.25)
     avg_DA_TF_zero, stdev_DA_TF_50, err_DA_TF_50, trans_DA_TF_50 = dist_avg_asynch_noW_tf(rand_geo_gr, TOL, FAILURE_RATE=0.50)
     avg_DA_TF_zero, stdev_DA_TF_75, err_DA_TF_75, trans_DA_TF_75 = dist_avg_asynch_noW_tf(rand_geo_gr, TOL, FAILURE_RATE=0.75)
+    plot_multiple_pairs(((err_DA_TF_zero, "Dist Avg 0%"),
+                        (err_DA_TF_25, "Dist Avg 25%"),
+                        (err_DA_TF_50, "Dist Avg 50%"),
+                        (err_DA_TF_75, "Dist Avg 75%")), "Dist Avg with Transmission Failure")
+    
+    avg_DA_drop, stdev_DA_drop, err_DA_drop, trans_DA_drop = dist_avg_asynch_noW_dropadd(rand_geo_gr, TOL, DROP_RATE=0.5, ADD_RATE=0.0, type="bulk")
+    plot_multiple_pairs( ((errors_asynch_noW, "Dist Avg Asynch"),
+                        (err_DA_drop, "Dist Avg Asynch (Drop=50%)")), "Removing Nodes with Asynch Dist Avg")
+    
+
+    temps = generate_measurements(NODES)
+    dict_temps = vector_to_dict(temps)
+    rand_geo_gr = generate_rgg(NODES, RAD, DIM, dict_temps)
+    avg_asynch_noW, stdev_asynch_noW, errors_asynch_noW, trans_asynch_noW = dist_avg_asynch_noW(rand_geo_gr, TOL)
+    avg_DA_add, stdev_DA_add, err_DA_add, trans_DA_add = dist_avg_asynch_noW_dropadd(rand_geo_gr, TOL, DROP_RATE=0.0, ADD_RATE=0.5, type="bulk")
+    
+    plot_multiple_pairs( ((errors_asynch_noW, "Dist Avg Asynch"),
+                        (err_DA_add, "Dist Avg Asynch (Add=50%)")), "Adding Nodes with Asynch Dist Avg")
+    
 
     # RANDOM GOSSIP
     avg_rand_goss, stdev_rand_goss_noW, error_rand_goss_noW, trans_rand_goss_noW = random_gossip_noW(rand_geo_gr, TOL)
     # plot_single_error(error_rand_goss_noW, "Random Gossip no W")
 
+    
     plot_multiple_pairs(((err_DA_TF_zero, "Dist Avg 0%"),
                         (err_DA_TF_25, "Dist Avg 25%"),
                         (err_DA_TF_50, "Dist Avg 50%"),
                         (err_DA_TF_75, "Dist Avg 75%"), 
                         (error_rand_goss_noW, "Random Gossip 0% ")), "Dist Avg with Transmission Failure")
+    
     
     # PDMM with c = 0.4 and failure rate = 0.0
     avg_pdmm_synch, stdev_pdmm_synch, error_pdmm_synch, trans_pdmm_synch = pdmm_synch(rand_geo_gr, TOL)

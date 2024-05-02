@@ -294,6 +294,8 @@ def dist_avg_asynch_noW_tf(graph, TOL, FAILURE_RATE=0.0):
 
     all_nodes = list(nx.nodes(graph))
     while (np.linalg.norm(list(all_temps.values()) - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
+        if transmissions > 100000: # limit the number of transmissions
+            break
         # uniformly select random node i
         node_i = random.choice(all_nodes)
         
@@ -343,6 +345,150 @@ def dist_avg_asynch_noW_tf(graph, TOL, FAILURE_RATE=0.0):
     print("Average: ", all_temps[0])
 
     return all_temps[0], std_devs, errors, transmissions
+
+def dist_avg_asynch_noW_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
+    '''
+    1) x(k-1) = x(0)
+    2) while e(k) > epsilon:
+        uniformly select random node i
+        find all neighbors of node i
+        Two methods to average:
+            ''manual averaging of i and neighbor i values'' -- USED HERE
+                x(k) = avg(x_i U x_ni)
+                e(k) = || . ||
+    TRANSMISSIONS: per iteration of while loop = N(i)
+    '''
+    print("")
+    if (DROP_RATE > 0.0): # Dropping nodes
+        print("------- DIST AVG w/ " + str(type) + " DROP: " + str(DROP_RATE) + " ------- ")
+    elif (ADD_RATE > 0.0): # Adding nodes
+        print("------- DIST AVG w/ " + str(type) + " ADD: " + str(ADD_RATE) + " ------- ")
+    else: print("------- DIST AVG w/ DROP: " + str(DROP_RATE) + " ADD " + str(ADD_RATE) + " ------- ")
+
+    start_time = time.time()
+
+    # x(k-1) = x(0)
+    all_temps = nx.get_node_attributes(graph, "temp")
+    
+    # get true average, used for stopping criterion
+    true_avg = np.mean(list(all_temps.values()))
+    std_devs = []
+    errors = []
+    transmissions = 0
+
+    DROPPED_FLAG = False
+    ADDED_FLAG = False
+
+    all_nodes = list(nx.nodes(graph))
+
+    num_nodes_drop = int(len(all_nodes) * DROP_RATE) # in total this is how many nodes you want to drop
+
+    num_nodes_add = int(len(all_nodes) * ADD_RATE) # in total this is how many nodes you want to add
+    print("Number of nodes to add: ", num_nodes_add)
+
+    while (np.linalg.norm(list(all_temps.values()) - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
+        if transmissions > 100000:
+            break
+        # CASE 1: BULK DROP
+        if (transmissions > 10000 and DROPPED_FLAG == False and type == "bulk" and DROP_RATE > 0.0):
+            graph_old = graph.copy()
+            num_nodes_drop = int(len(all_nodes) * DROP_RATE)
+            nodes_to_drop = random.sample(all_nodes, num_nodes_drop)
+            for node in nodes_to_drop:
+                graph.remove_node(node)
+            if not nx.is_connected(graph):
+                print("\033[91mERROR: After the nodes have been dropped in bulk, the graph is no longer connected.\033[0m")
+                break
+
+            plot_rgg_side_by_side(graph_old, graph, "Bulk Drop")
+            
+            # Recalculation after nodes drop
+            all_nodes = list(nx.nodes(graph))
+            all_temps = {node: temp for node, temp in all_temps.items() if node in graph}
+            # true_avg = np.mean(list(all_temps.values()))
+            DROPPED_FLAG = True
+        
+        # CASE 2: BULK ADD
+        if (transmissions > 10000 and ADDED_FLAG == False and type == "bulk" and ADD_RATE > 0.0):
+            graph_old = graph.copy()
+            print("Number of nodes BEFORE BULK ADD: ", len(all_nodes))
+            num_nodes_add = int(len(all_nodes) * ADD_RATE)
+            new_measurements = generate_measurements(num_nodes_add)
+
+            for i in range(num_nodes_add):
+                # print("Node to add: ", len(all_nodes)+i+1)
+                # is position supposed to be in this range
+                graph.add_node(len(all_nodes)+1+i, pos=(random.uniform(0, 1), random.uniform(0, 1)), temp=new_measurements[i])
+                # make sure graph position is being created as well
+
+                pos = nx.get_node_attributes(graph, 'pos') 
+                
+                # print(len(pos), "should be equal to ", len(all_nodes)+i+1)
+
+                # randomly connect it to the graph in a random geometric manner
+                RADIUS = 0.12
+                
+                for node in graph.nodes():
+                    if node != len(all_nodes) + i + 1 and node not in all_nodes[-num_nodes_add:]:
+                        distance = np.linalg.norm(np.array(graph.nodes[node]['pos']) - np.array(graph.nodes[len(all_nodes) + i + 1]['pos']))
+                        if distance <= RADIUS:
+                            if not graph.has_edge(node, len(all_nodes) + i + 1):
+                                graph.add_edge(node, len(all_nodes) + i + 1)
+
+            # to check this was done correctly, print the graph before and after adding nodes
+            plot_rgg_side_by_side(graph_old, graph, "Bulk Add")
+
+            # Check if the graph is connected
+            if not nx.is_connected(graph):
+                print("\033[91mERROR: After the nodes have been added in bulk, the graph is no longer connected.\033[0m")
+                break
+            
+            # Recalculation after nodes drop
+            all_nodes = list(nx.nodes(graph))
+            print("Number of nodes AFTER BULK ADD: ", len(all_nodes))
+            # all_temps = nx.get_node_attributes(graph, "temp")
+            all_temps.update({node: graph.nodes[node]['temp'] for node in all_nodes[-num_nodes_add:]})
+            # true_avg = np.mean(list(all_temps.values()))
+            
+            ADDED_FLAG = True
+
+        # uniformly select random node i
+        node_i = random.choice(all_nodes)
+        
+        # find all neighbors of node i
+        neighbors_i = list(nx.all_neighbors(graph, node_i))
+
+        # before computing the average, get values in set N(i) U i
+        cur_temps = [all_temps[node] for node in neighbors_i]
+        cur_temps.append(all_temps[node_i])
+
+        avg = sum(cur_temps) / len(cur_temps)
+
+        # update all nodes in set N(i) U i
+        for node in neighbors_i:
+            all_temps[node] = avg
+        all_temps[node_i] = avg
+
+        # TRANSMISSIONS: per iteration of while loop = N(i)
+        transmissions += len(neighbors_i)
+
+        # update values for plotting later
+        std_dev = statistics.stdev(list(all_temps.values()))
+        std_devs.append((transmissions, std_dev))
+
+        # e(k) = || . ||
+        errors.append((transmissions, np.linalg.norm(list(all_temps.values()) - np.ones(len(all_nodes)) * true_avg)**2))
+
+    if np.max(np.mean(list(all_temps.values())) - true_avg) > TOL:
+        print(f"\033[91mERROR: On average the values in x_k are not within {TOL} of each other.\033[0m")
+    
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Execution time:", execution_time, "seconds")
+    print("Transmissions: ", transmissions)
+    print("Average: ", list(all_temps.values())[0])
+
+    return list(all_temps.values())[0], std_devs, errors, transmissions
 
 
 '''
