@@ -264,6 +264,87 @@ def dist_avg_asynch_noW(graph, TOL):
 
     return all_temps[0], std_devs, errors, transmissions
 
+
+'''
+ASYNCH DIST AVG TF
+'''
+def dist_avg_asynch_noW_tf(graph, TOL, FAILURE_RATE=0.0):
+    '''
+    1) x(k-1) = x(0)
+    2) while e(k) > epsilon:
+        uniformly select random node i
+        find all neighbors of node i
+            x(k) = avg(x_i U x_ni)
+            e(k) = || . ||
+    TRANSMISSIONS: per iteration of while loop = N(i)
+    '''
+    print("")
+    print("------- ASYNCH. DIST. AVG. UNDER TF------- ")
+
+    start_time = time.time()
+
+    # x(k-1) = x(0)
+    all_temps = nx.get_node_attributes(graph, "temp")
+    
+    # get true average, used for stopping criterion
+    true_avg = np.mean(list(all_temps.values()))
+    std_devs = []
+    errors = []
+    transmissions = 0
+
+    all_nodes = list(nx.nodes(graph))
+    while (np.linalg.norm(list(all_temps.values()) - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
+        # uniformly select random node i
+        node_i = random.choice(all_nodes)
+        
+        # find all neighbors of node i
+        neighbors_i = list(nx.all_neighbors(graph, node_i))
+
+        # TF: does not see neighbors which are there
+        # do some failures here
+        # randomly drop out transmissions with failure_rate amount of neighbors
+        num_failures = int(len(neighbors_i) * 0.5*FAILURE_RATE)
+        neighbors_i = random.sample(neighbors_i, len(neighbors_i) - num_failures)
+
+        # before computing the average, get values in set N(i) U i
+        cur_temps = [all_temps[node] for node in neighbors_i]
+        # TF: does not get all the averages back
+
+        # do some failures here
+        # randomly drop out some pairs in cur_temps
+        num_dropouts = int(len(cur_temps) * 0.5 * FAILURE_RATE)
+        cur_temps = random.sample(cur_temps, len(cur_temps) - num_dropouts)
+        cur_temps.append(all_temps[node_i])
+
+        avg = sum(cur_temps) / len(cur_temps)
+
+        # update all nodes in set N(i) U i
+        for node in neighbors_i:
+            all_temps[node] = avg
+        all_temps[node_i] = avg
+
+        # TRANSMISSIONS: per iteration of while loop = N(i)
+        transmissions += len(neighbors_i)
+
+        # update values for plotting later
+        std_dev = statistics.stdev(list(all_temps.values()))
+        std_devs.append((transmissions, std_dev))
+
+        # e(k) = || . ||
+        errors.append((transmissions, np.linalg.norm(list(all_temps.values()) - np.ones(len(all_nodes)) * true_avg)**2))
+
+    if np.max(np.mean(list(all_temps.values())) - true_avg) > TOL:
+        print(f"\033[91mERROR: On average the values in x_k are not within {TOL} of each other.\033[0m")
+    
+    end_time = time.time()
+    execution_time = end_time - start_time
+    print("Execution time:", execution_time, "seconds")
+    print("Transmissions: ", transmissions)
+    print("Average: ", all_temps[0])
+
+    return all_temps[0], std_devs, errors, transmissions
+
+
 '''
 RANDOMIZED GOSSIP
 '''
@@ -621,9 +702,9 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
     while (np.linalg.norm(list(all_temps.values()) - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
         
         # CASE 1: BULK DROP
-        if (transmissions > 1000 and DROPPED_FLAG == False and type == "bulk" and DROP_RATE > 0.0):
+        if (transmissions > 10000 and DROPPED_FLAG == False and type == "bulk" and DROP_RATE > 0.0):
             graph_old = graph.copy()
-            # print("Number of nodes BEFORE DROP: ", len(all_nodes))
+            print("Number of nodes BEFORE DROP: ", len(all_nodes))
             num_nodes_drop = int(len(all_nodes) * DROP_RATE)
             # print("Number of nodes to drop: ", num_nodes_drop)
             nodes_to_drop = random.sample(all_nodes, num_nodes_drop)
@@ -639,20 +720,23 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
             
             # Recalculation after nodes drop
             all_nodes = list(nx.nodes(graph))
-            # print("Number of nodes AFTER BULK DROP: ", len(all_nodes))
-            all_temps = nx.get_node_attributes(graph, "temp")
+            print("Number of nodes AFTER BULK DROP: ", len(all_nodes))
+            # all_temps = nx.get_node_attributes(graph, "temp")
+            all_temps = {node: temp for node, temp in all_temps.items() if node in graph}
+
             true_avg = np.mean(list(all_temps.values()))
             
             DROPPED_FLAG = True
 
         # CASE 2: SEQUENTIAL DROP
-        if (transmissions > 2000 and DROPPED_FLAG == False and type == "seq" and transmissions % 1000 == 0 and DROP_RATE > 0.0): # only drop every 100 iterations of the while loop
+        if (transmissions > 10000 and DROPPED_FLAG == False and type == "seq" and transmissions % 1000 == 0 and DROP_RATE > 0.0): # only drop every 100 iterations of the while loop
             all_nodes = list(nx.nodes(graph))           # get current list of nodes
             node_to_drop = random.choice(all_nodes)     # drop a single random node from the graph
             graph.remove_node(node_to_drop) # drop a single random node from the graph
 
             # recalculate necessary things for computations later to continue
-            all_temps = nx.get_node_attributes(graph, "temp")
+            # all_temps = nx.get_node_attributes(graph, "temp")
+            all_temps = {node: temp for node, temp in all_temps.items() if node in graph}
             all_nodes = list(nx.nodes(graph))
             true_avg = np.mean(list(all_temps.values()))
 
@@ -664,29 +748,29 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
                 break
 
             if num_nodes_dropped_already == num_nodes_drop:
-                # print("Number of nodes AFTER SEQ DROP: ", len(all_nodes))
+                print("Number of nodes AFTER SEQ DROP: ", len(all_nodes))
                 DROPPED_FLAG = True
         
         # CASE 3: BULK ADD
-        if (transmissions > 2000 and ADDED_FLAG == False and type == "bulk" and ADD_RATE > 0.0):
+        if (transmissions > 10000 and ADDED_FLAG == False and type == "bulk" and ADD_RATE > 0.0):
             graph_old = graph.copy()
             print("Number of nodes BEFORE BULK ADD: ", len(all_nodes))
             num_nodes_add = int(len(all_nodes) * ADD_RATE)
             new_measurements = generate_measurements(num_nodes_add)
 
             for i in range(num_nodes_add):
-                print("Node to add: ", len(all_nodes)+i+1)
+                # print("Node to add: ", len(all_nodes)+i+1)
                 # is position supposed to be in this range
                 graph.add_node(len(all_nodes)+1+i, pos=(random.uniform(0, 1), random.uniform(0, 1)), temp=new_measurements[i])
                 # make sure graph position is being created as well
 
                 pos = nx.get_node_attributes(graph, 'pos') 
                 
-                print(len(pos), "should be equal to ", len(all_nodes)+i+1)
+                # print(len(pos), "should be equal to ", len(all_nodes)+i+1)
 
                 # randomly connect it to the graph in a random geometric manner
                 RADIUS = np.sqrt(np.log(2*len(all_nodes)+i+1)) / len(all_nodes)+i+1
-                print("Radius: ", RADIUS)
+                # print("Radius: ", RADIUS)
                 for node in graph.nodes():
                     if node != len(all_nodes) + i + 1:
                         distance = np.linalg.norm(np.array(graph.nodes[node]['pos']) - np.array(graph.nodes[len(all_nodes) + i + 1]['pos']))
@@ -704,13 +788,14 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
             # Recalculation after nodes drop
             all_nodes = list(nx.nodes(graph))
             print("Number of nodes AFTER BULK ADD: ", len(all_nodes))
-            all_temps = nx.get_node_attributes(graph, "temp")
+            # all_temps = nx.get_node_attributes(graph, "temp")
+            all_temps.update({node: graph.nodes[node]['temp'] for node in all_nodes[-num_nodes_add:]})
             true_avg = np.mean(list(all_temps.values()))
             
             ADDED_FLAG = True
         
         # CASE 4: SEQUENTIAL ADD
-        if (transmissions > 2000 and ADDED_FLAG == False and type == "seq" and transmissions % 1000 == 0 and ADD_RATE > 0.0): # only add every 100 iterations of the while loop
+        if (transmissions > 5000 and ADDED_FLAG == False and type == "seq" and transmissions % 1000 == 0 and ADD_RATE > 0.0): # only add every 100 iterations of the while loop
             graph_old = graph.copy()
             all_nodes = list(nx.nodes(graph))           # get current list of nodes
             new_measurement = generate_measurements(1)
@@ -731,8 +816,11 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
             # plot_rgg_side_by_side(graph_old, graph)
 
             # recalculate necessary things for computations later to continue
-            all_temps = nx.get_node_attributes(graph, "temp")
+            # all_temps = nx.get_node_attributes(graph, "temp")
             all_nodes = list(nx.nodes(graph))
+            # print("Number of nodes in all_nodes: ", len(all_nodes))
+            all_temps.update({node: graph.nodes[node]['temp'] for node in all_nodes[-num_nodes_add:]})
+            # print("Number of nodes in all_temps: ", len(all_temps))
             true_avg = np.mean(list(all_temps.values()))
 
             num_nodes_added_already += 1
@@ -743,7 +831,7 @@ def random_gossip_dropadd(graph, TOL, DROP_RATE=0.0, ADD_RATE=0.0, type="bulk"):
                 break
 
             if num_nodes_added_already == num_nodes_add:
-                # print("Number of nodes AFTER SEQ DROP: ", len(all_nodes))
+                print("Number of nodes AFTER SEQ DROP: ", len(all_nodes))
                 ADDED_FLAG = True
 
 
@@ -869,117 +957,9 @@ def pdmm_async_tf(graph, TOL, c=0.4, FAILURE_RATE=0.0):
     return x[0], std_devs, errors, transmissions
 
 '''
-PDMM Asynchronous with Node Drop/Add
+PDMM Asynchronous with Bulk Drop/Add
 '''
-# DOESNT WORK
 def pdmm_asynch_dropadd(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
-    '''
-    PDMM Asynchronous Node Dropping and Adding
-    2 Cases:
-        * Bulk drop
-        * Bulk add
-    '''
-    print("")
-    if (DROP_RATE > 0.0): # Dropping nodes
-        print("------- PDMM Asynchronous w/ Bulk DROP: " + str(DROP_RATE) + " ------- ")
-    elif (ADD_RATE > 0.0): # Adding nodes
-        print("------- PDMM Asynchronous w/ Bulk ADD: " + str(ADD_RATE) + " ------- ")
-
-    start_time = time.time()
-
-    # Initialize variables
-    all_nodes = list(nx.nodes(graph))
-    print(sorted(all_nodes))
-    all_edges = list(nx.edges(graph))
-    a = np.array(list(nx.get_node_attributes(graph, "temp").values()))
-    x = np.zeros(len(all_nodes))
-    list_neighbors = [list(nx.all_neighbors(graph, node)) for node in all_nodes]
-
-    # Dimension of these should always be 2*num_edges
-    z_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors[i]}      # check every time you update that its a valid edge
-    y_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors[i]}      # check every time you update that its a valid edge
-    d = np.array([graph.degree(node) for node in all_nodes])
-
-    # Make A: Implemented as a dictionary to avoid indexing issues
-    A = {}
-    for i, edge in enumerate(all_edges):
-        A[(edge[0], edge[1])] = 1
-        A[(edge[1], edge[0])] = -1
-    
-    # Get true average, used for stopping criterion
-    true_avg = np.mean(a)
-    std_devs = []
-    errors = []
-    transmissions = 0
-
-    DROP_FLAG = False
-    
-    while (np.linalg.norm(x - np.ones(len(all_nodes)) * true_avg)**2 > TOL):
-
-        # Bulk Drop
-        if (transmissions > 100 and DROP_RATE > 0.0 and DROP_FLAG == False):
-            graph_old = graph.copy()
-            print("Number of nodes BEFORE DROP: ", len(all_nodes))
-            num_nodes_drop = int(len(all_nodes) * DROP_RATE)
-            nodes_to_drop = random.sample(all_nodes, num_nodes_drop)
-            for node in nodes_to_drop:
-                graph.remove_node(node)
-            # Check if the graph is connected
-            if not nx.is_connected(graph):
-                print("\033[91mERROR: After the nodes have been dropped in bulk, the graph is no longer connected.\033[0m")
-                break
-
-            # plot the two graphs
-            plot_rgg_side_by_side(graph_old, graph, "Bulk Drop")
-
-            all_nodes = list(nx.nodes(graph))
-            print("Number of nodes AFTER DROP: ", len(all_nodes))
-            print(sorted(all_nodes))
-
-            # Rebuild the necessary variables
-            all_edges = list(nx.edges(graph))
-            a = np.array(list(nx.get_node_attributes(graph, "temp").values()))
-            x = np.zeros(len(all_nodes))
-            list_neighbors = {node: list(nx.all_neighbors(graph, node)) for node in all_nodes}
-            
-            z_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors.get(i, [])}
-            y_ij = {(i, j): 0.0 for i in all_nodes for j in list_neighbors.get(i, [])}
-            d = np.array([graph.degree(node) for node in all_nodes])
-            A = {}
-            for i, edge in enumerate(all_edges):
-                A[(edge[0], edge[1])] = 1
-                A[(edge[1], edge[0])] = -1
-            true_avg = np.mean(a)
-
-            DROP_FLAG = True
-        
-
-
-        # print("Number of nodes AFTER DROP: ", len(all_nodes))
-        i = random.choice(all_nodes)
-        transmissions += 1
-        
-        x[i] = (a[i] - np.sum( A[(i, j)] * z_ij[(i, j)] for j in list_neighbors[i])) / (1 + c * d[i])
-        for j in list_neighbors[i]:
-            y_ij[(i, j)] = z_ij[(i, j)] + 2 * c * x[i] * A[(i, j)]
-        for j in list_neighbors[i]:
-            z_ij[(i, j)] = y_ij[(j, i)]
-            
-        
-        std_dev = statistics.stdev(x)
-        std_devs.append((transmissions, std_dev))
-
-        errors.append((transmissions, np.linalg.norm(x - np.ones(len(all_nodes)) * true_avg)**2))
-    
-    end_time = time.time()
-    execution_time = end_time - start_time
-    print("Execution time:", execution_time, "seconds")
-    print("Transmissions: ", transmissions)
-    print("Average: ", x[0])
-
-    return x[0], std_devs, errors, transmissions
-
-def pdmm_asynch_justdrop(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
     '''
     1) Initialize variables
     x_0 = 0                                     (dimension = # nodes (n) x 1)
@@ -1120,8 +1100,6 @@ def pdmm_asynch_justdrop(graph, TOL, c=0.4, DROP_RATE=0.0, ADD_RATE=0.0):
             if not nx.is_connected(graph):
                 print("\033[91mERROR: After the nodes have been added in bulk, the graph is no longer connected.\033[0m")
                 break
-
-            
 
             # Recalculate necessary variables
             all_nodes = list(nx.nodes(graph))

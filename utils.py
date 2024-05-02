@@ -23,12 +23,12 @@ def generate_rgg(num_nodes, radius, dimen, meas):
         is_connected = nx.is_connected(rgg)
 
     pos = nx.get_node_attributes(rgg, 'pos') 
-    nx.draw(rgg, pos, with_labels=True, node_size=200, node_color='skyblue', font_size=8)
+    nx.draw(rgg, pos, with_labels=True, node_size=300, node_color='skyblue', font_size=12)
 
     plt.axis('equal')
     plt.xlabel('100 km^2')
     plt.ylabel('100 km^2')
-    plt.title("Graph of " + str(num_nodes) + " nodes with radius " + str(radius) + " and dimension " + str(dimen))
+    plt.title("Graph of {} nodes with radius {} and dimension {}".format(num_nodes, radius, dimen))  # Modified title
     plt.show()
 
     nx.set_node_attributes(rgg, meas, "temp")
