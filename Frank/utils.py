@@ -4,7 +4,7 @@ import networkx as nx
 
 # np.random.seed(1)
 
-def build_random_graph(num_nodes_fix,required_probability=0.999,fix_num_nodes=False):
+def build_random_graph(num_nodes_fix,required_probability=0.999,fix_num_nodes=False,r_fix=None):
     """
     Builds a random geometric graph with a given required probability.
 
@@ -22,16 +22,20 @@ def build_random_graph(num_nodes_fix,required_probability=0.999,fix_num_nodes=Fa
     if fix_num_nodes:
         num_nodes=num_nodes_fix
     
-    r_c = np.sqrt(np.log(2*num_nodes) / num_nodes)
+    if r_fix is not None:
+        r_c=r_fix
+    else:
+        r_c = np.sqrt(np.log(2*num_nodes) / num_nodes)
+    
 
     pos = {i: (np.random.uniform(low=0, high=100), np.random.uniform(low=0, high=100)) for i in range(num_nodes)}
 
     G = nx.random_geometric_graph(n=num_nodes, radius=r_c * 100, pos=pos)
 
     A = nx.adjacency_matrix(G).toarray()
-    return num_nodes, G, A, pos
+    return num_nodes, G, A, pos,r_c
 
-def add_node_to_graph(G, pos, new_node_id):
+def add_node_to_graph(G, pos, new_node_id,r_c):
     """
     Add a new node to an existing graph, connecting it to all nodes within a certain radius.
 
@@ -45,8 +49,8 @@ def add_node_to_graph(G, pos, new_node_id):
     - pos (dict): The updated positions of the nodes in the graph.
     - A (np.array): The adjacency matrix of the updated graph.
     """
-    num_nodes = len(G.nodes)
-    r_c = np.sqrt(np.log(2*num_nodes) / num_nodes)
+    # num_nodes = len(G.nodes)
+    # r_c = np.sqrt(np.log(2*num_nodes) / num_nodes)
 
     # Generate a random position for the new node
     new_pos = (np.random.uniform(low=0, high=100), np.random.uniform(low=0, high=100))
@@ -103,12 +107,15 @@ def generate_temp_field(num_nodes, var, true_temp):
 
     return temperature
 
-def plot_log_convergence(losses,transmissions, legend,num_nodes):
+def plot_log_convergence(losses,transmissions, legend,title,*args):
     for i,loss in enumerate(losses):
-        plt.plot(transmissions[i], loss)
+        if len(args)>0:
+            plt.plot(transmissions[i], loss, color=args[0][i])
+        else:
+            plt.plot(transmissions[i], loss)
     plt.xlabel('Transmissions')
     plt.ylabel('Loss ||x-x_ave||^2')
-    plt.title('Loss vs Transmission for {} nodes'.format(num_nodes))
+    plt.title(title, fontweight='bold')
     plt.yscale('log')
     plt.legend(legend)
     plt.show()
