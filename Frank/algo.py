@@ -42,7 +42,7 @@ def random_gossip(temperature, A, tolerance=0.00001):
             converged = True
         else:
             loss= np.append(loss, np.sum((temperature - avg_temp)**2))
-    print(temperature[0:5])
+    # print(temperature[0:5])
     return loss,temperature
 
 def random_gossip_TF(temperature, A, tolerance=0.00001, transmission_failure=0.1):
@@ -230,7 +230,7 @@ def random_gossip_node_change_seq(temperature, G,pos,true_temp,var, r_c,toleranc
         else:
             # print(iter,"\t",np.sum((temperature - avg_temp)**2))
             loss= np.append(loss, np.sum((temperature - avg_temp)**2))
-    print("num_nodes ",G.number_of_nodes(),"\t", curr_num,"\t", num_change)
+    # print("num_nodes ",G.number_of_nodes(),"\t", curr_num,"\t", num_change)
     return loss,temperature
 
 
@@ -278,7 +278,7 @@ def PDMM_async(temperature, G,tolerance=10**-8,c=0.3):
         #update z_ij
         for j in G.neighbors(i):
             z[i,j]=y[j,i]
-    print(x[0:5])
+    # print(x[0:5])
     return loss,transmissions
 
 def PDMM_async_TF(temperature, G, tolerance=10**-8, c=0.3, transmission_failure=0.1):
@@ -411,7 +411,7 @@ def PDMM_async_node_change(temperature , G,pos,true_temp,var,r_c,tolerance=10**-
 
                 if averaging_method=="update":
                     avg_temp = (avg_temp*(num_nodes+1)-old_temp)/num_nodes
-    print("num_nodes ",G.number_of_nodes())
+    # print("num_nodes ",G.number_of_nodes())
     return loss,transmissions
 
 
@@ -495,7 +495,7 @@ def PDMM_async_node_change_seq(temperature , G,pos,true_temp,var,r_c,tolerance=1
             if averaging_method=="update":
                 avg_temp = (avg_temp*(num_nodes+1)-old_temp)/num_nodes
             iter= iter+1
-    print("num_nodes ",G.number_of_nodes(),"\t", curr_num,"\t", num_change)
+    # print("num_nodes ",G.number_of_nodes(),"\t", curr_num,"\t", num_change)
     
     return loss,transmissions
 
@@ -531,7 +531,7 @@ def async_distr_averaging(temperature,A,tolerance):
             converged = True
         else:
             loss_a = np.append(loss_a, np.sum((temperature - avg_temp)**2))
-    print(temperature[0:5])
+    # print(temperature[0:5])
     return loss_a,transmissions,temperature
 
 

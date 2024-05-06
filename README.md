@@ -18,3 +18,5 @@ The final report is available in: `Distributed_Final_Report_FinalVersion.pdf`.
 Install dependencies available in `requirements.txt`. Run the main.py file to recreate results from the report including additional experiments. To obtain only certain results, comment out the other function calls in `main()`.
 
 ## To run Frank's
+
+Install dependencies available in `requirements.txt`. Run cells of `frank.ipynb` to recreate results, or view existing results.
