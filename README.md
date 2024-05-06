@@ -11,7 +11,7 @@ There are two versions of the codebase -- Anja's and Frank's.
 
 Both versions implement distributed averaging (synchronous, asynchronous), random gossip, and primal-dual method of multipliers (synchronous, asynchronous). Both codebases also provide the relevant functions to plot the random geometric graphs (RGGs) used to describe the problem setting. Both implementations also produce plots for the primary purposes of comparing algorithms. However, there are some additional experiments conducted such as finding the optimal c hyperparameter in PDMM and comparing the synchronous and asynchornous implementations.
 
-The final report is available in: `Distributed_Final_Report_FinalVersion.pdf'.
+The final report is available in: `Distributed_Final_Report_FinalVersion.pdf`.
 
 ## To run Anja's
 
